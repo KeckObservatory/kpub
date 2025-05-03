@@ -1,22 +1,10 @@
 from flask import Blueprint, request, make_response
 import pdb
-import typing
-from typing import List, Dict
 from flask.json import jsonify
-from astroplan import Observer
-from bson.objectid import ObjectId
-from datetime import datetime
-from astropy.time import Time
 import requests
-from common import obsid_is_admin, handle_error, lowercaseKeys
-from astroquery.vizier import Vizier
-from db_conn_mongo import db_conn_mongo
-from db_conn import db_conn
+from common import handle_error, parse_config, is_internal_ip, admin_route
 from base64 import b64decode
-from target_functions import KECK_LAT, KECK_LONG, KECK_ELEVATION, alt_az_deg, get_hour_angle, hours_to_deg
 import logging
-from common import parse_config
-from schedule_functions import get_info_by_observer
 
 API = 'kpub'
 CONFIG_NAME = "config.live.ini"

@@ -2,11 +2,10 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from flask import Flask, jsonify
 from os.path import isfile
 from socket import gethostname
-from targets_blueprint import planning_tool_api
 from kpub_blueprint import kpub_api
 import eventlet
 from eventlet import wsgi
-from common import create_logger, parse_config
+from common import create_logger, parse_config, is_internal_ip, admin_route
 import yaml
 import logging
 import pdb

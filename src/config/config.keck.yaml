@@ -41,10 +41,10 @@
   #instrument associations list for each article.  
   "instruments": [
     'DEIMOS',
-    'ESI',
+    ' ESI ',
     'KPIC',
     'KPF',
-    'SCALES',
+    'KECK/SCALES',
     'HIRES',
     'KCWI',
     'LRIS',
@@ -53,9 +53,9 @@
     'NIRES',
     'NIRSPEC',
     'OSIRIS',
-    'AO',
-    'LGS',
-    'NGS',
+    ' AO ',
+    ' LGS ',
+    ' NGS ',
   ],
 
   #Archives strings to look for to indicate archiving was referenced.

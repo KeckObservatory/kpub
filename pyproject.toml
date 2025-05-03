@@ -1,0 +1,25 @@
+[project]
+name = "kpub"
+version = "0.1.0"
+description = "enables an institution to keep track of it's scientific publications in an easy way."
+authors = [
+    {name = "Tyler Tucker",email = "tylertucker202@gmail.com"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.7"
+dependencies = [
+  "pyyaml",
+  "requests",
+  "jinja2",
+  "textract-py3",
+  "matplotlib",
+  "psycopg2",
+  "bokeh",
+  "openpyxl"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

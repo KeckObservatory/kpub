@@ -13,6 +13,7 @@ import datetime
 import argparse
 import collections
 import sqlite3 as sql
+import psycopg2 
 import numpy as np
 import yaml
 import requests
@@ -21,25 +22,26 @@ import webbrowser
 from pprint import pprint
 import logging
 import jinja2
+import pdb
+from sql_lite_db import SQLiteDB
+#init logging
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger('KPUB')
+log.setLevel(logging.INFO)
 try:    
     import textract
 except: 
     textract = None
-    print("ERROR: Could not import textract!  Will not be able to parse PDF text.")
+    log.error("Could not import textract!  Will not be able to parse PDF text.")
 
-#todo: temp hack until we figure out packaging stuff
-#from . import plot
 import plot
+
 
 #misc globals
 PACKAGEDIR = os.path.abspath(os.path.dirname(__file__))
 PLOTDIR = f"{PACKAGEDIR}/../data/plots"
 MDDIR   = f"{PACKAGEDIR}/../data/output"
 
-#init logging
-logging.basicConfig(level=logging.INFO)
-log = logging.getLogger('KPUB')
-log.setLevel(logging.INFO)
 
 #ADS API URL
 ADS_API = 'https://api.adsabs.harvard.edu/v1/search/query?'
@@ -72,7 +74,7 @@ HIGHLIGHTS = {
 }
 
 
-class PublicationDB(object):
+class PublicationDB(SQLiteDB):
     """Class wrapping the SQLite database containing the publications.
 
     Parameters
@@ -81,29 +83,8 @@ class PublicationDB(object):
         Path to the SQLite database file.
     """
     def __init__(self, filename=DEFAULT_DB, config=None):
-        self.filename = filename
         self.config = config
-        self.con = sql.connect(filename)
-        pubs_table_exists = self.con.execute(
-                                """
-                                   SELECT COUNT(*) FROM sqlite_master
-                                   WHERE type='table' AND name='pubs';
-                                """).fetchone()[0]
-        if not pubs_table_exists:
-            self.create_table()    
-
-    def create_table(self):
-        self.con.execute("""CREATE TABLE pubs(
-                                id UNIQUE,
-                                bibcode UNIQUE,
-                                year,
-                                month,
-                                date,
-                                mission,
-                                science,
-                                instruments,
-                                archive,
-                                metrics)""")
+        super().__init__(filename)
 
     def add(self, article, mission="", science="", instruments="", archive=""):
         """Adds a single article object to the database.
@@ -123,18 +104,7 @@ class PublicationDB(object):
         article['science'] = science
         article['instruments'] = instruments
         article['archive'] = archive
-
-        #insert to db
-        try:
-            cur = self.con.execute("INSERT INTO pubs "
-                "(id, bibcode, year, month, date, mission, science, instruments, archive, metrics) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [article['id'], article['bibcode'], article['year'], month, article['pubdate'],
-                mission, science, instruments, archive, json.dumps(article)])
-            log.info(f"Inserted {article['bibcode']}")
-            self.con.commit()
-        except sql.IntegrityError:
-            log.warning('{} was already ingested.'.format(article['bibcode']))
+        self.add_row(article, month, mission, science, instruments, archive)
 
     def add_interactively(self, article, statusmsg="", highlights=None):
         """Adds an article by prompting the user for the classification.
@@ -151,7 +121,7 @@ class PublicationDB(object):
 
         # Print paper information to stdout
         #print(chr(27) + "[2J")  # Clear screen
-        print(statusmsg)
+        log.info(statusmsg)
         display_abstract(article, self.config['colors'], highlights)
 
         # Prompt the user to classify the paper by mission
@@ -161,7 +131,7 @@ class PublicationDB(object):
         valmap = add_prompt_valmaps(valmap, missions)
         mission = ''
         while True:
-            print("\n([p] PDF view  [m] More context)")
+            log.info("\n([p] PDF view  [m] More context)")
             mission = prompt_grouping(valmap, 'Mission')
             if mission.lower() == 'm':
                 self.find_all_snippets(article['bibcode'])
@@ -203,6 +173,8 @@ class PublicationDB(object):
         colors = self.config.get('colors')
         missions = self.config.get('missions', [])
         instruments = self.config.get('instruments', [])
+        blacklist = self.config.get('blacklist', [])
+        pdb.set_trace()
         ads_api_key = self.config.get('ADS_API_KEY')
 
         #if not config for this, then return empty array
@@ -214,17 +186,17 @@ class PublicationDB(object):
 
         #try two methods for finding matches
         try:
-            counts = get_word_match_counts_by_pdf(bibcode, words, ads_api_key)
+            counts = get_word_match_counts_by_pdf(bibcode, words, ads_api_key, blacklist)
         except Exception as e:
-            print("WARN: Could not parse PDF file.  Using alternate ADS query method...")
+            log.warning("Could not parse PDF file.  Using alternate ADS query method...")
             counts = get_word_match_counts_by_query(bibcode, words, ads_api_key)
 
-        #print snippets
-        print("\nSNIPPETS FOUND:")
+        #log.info snippets
+        log.info("\nSNIPPETS FOUND:")
         for instr, count in counts.items():
             for snippet in count['snippets']:
                 snippet = highlight_text(snippet, colors)
-                print(f'"... {snippet}"')
+                log.info(f'"... {snippet}"')
 
         return counts
 
@@ -243,17 +215,17 @@ class PublicationDB(object):
         try:
             counts = get_word_match_counts_by_pdf(bibcode, archive, ads_api_key)
         except Exception as e:
-            print("WARN: Could not parse PDF file.  Using alternate ADS query method...")
+            log.warning("Could not parse PDF file.  Using alternate ADS query method...")
             counts = get_word_match_counts_by_query(bibcode, archive, ads_api_key)
 
-        #print snippets
-        # print("ARCHIVE SNIPPETS FOUND:")
+        #log.info snippets
+        # log.info("ARCHIVE SNIPPETS FOUND:")
         # for key, count in counts.items():
         #     for snippet in count['snippets']:
         #         snippet = highlight_text(snippet, self.config['colors'])
-        #         print(f'"... {snippet}"')
+        #         log.info(f'"... {snippet}"')
         if len(counts) > 0:
-            print("ARCHIVE ACKNOWLDGEMENT FOUND")
+            log.info("ARCHIVE ACKNOWLDGEMENT FOUND")
 
         #return "0" or "1"
         #NOTE: Using str values b/c original code used blobs for all DB cols.
@@ -266,23 +238,24 @@ class PublicationDB(object):
 
         #if not config for this, then return empty array
         instruments = self.config.get('instruments')
+        blacklist = self.config.get('blacklist', [])
         if not instruments:
             return ''
 
         #try two methods for finding matches
         ads_api_key = self.config.get('ADS_API_KEY')
         try:
-            counts = get_word_match_counts_by_pdf(bibcode, instruments, ads_api_key)
+            counts = get_word_match_counts_by_pdf(bibcode, instruments, ads_api_key, blacklist)
         except Exception as e:
-            print("WARN: Could not parse PDF file.  Using alternate ADS query method...")
+            log.warning("Could not parse PDF file.  Using alternate ADS query method...")
             counts = get_word_match_counts_by_query(bibcode, instruments, ads_api_key)
 
-        #print snippets
-        print("\nINSTRUMENT SNIPPETS FOUND:")
+        #log.info snippets
+        log.info("\nINSTRUMENT SNIPPETS FOUND:")
         for instr, count in counts.items():
             for snippet in count['snippets']:
                 snippet = highlight_text(snippet, self.config['colors'])
-                print(f'"... {snippet}"')
+                log.info(f'"... {snippet}"')
 
         #prompt for user confirmation
         instr_str = "|".join(counts.keys())
@@ -314,60 +287,6 @@ class PublicationDB(object):
                     self.add_interactively(article)
                 else:
                     self.add(article, **kwargs)
-
-    def delete_by_bibcode(self, bibcode):
-        cur = self.con.execute("DELETE FROM pubs WHERE bibcode = ?;", [bibcode])
-        log.info('Deleted {} row(s).'.format(cur.rowcount))
-        self.con.commit()
-
-    def article_exists(self, article):
-        count = self.con.execute("SELECT COUNT(*) FROM pubs WHERE id = ? OR bibcode = ?;",
-                                 [article['id'], article['bibcode']]).fetchone()[0]
-        return bool(count)
-
-    def query(self, mission=None, science=None, year=None):
-        """Query the database by mission and/or science and/or year.
-
-        Parameters
-        ----------
-        mission : str
-            Examples: 'kepler' or 'k2'
-        science : str
-            Examples: 'exoplanets' or 'astrophysics'
-        year : int or list of int
-            Examples: 2009, 2010, [2009, 2010], ...
-
-        Returns
-        -------
-        rows : list
-            List of SQLite result rows.
-        """
-        # Build the query
-        if mission is None:
-            where = "(mission != 'unrelated') "
-        else:
-            where = "(mission = '{}') ".format(mission)
-
-        if science is not None:
-            where += " AND science = '{}' ".format(science)
-
-        if year is not None:
-            if isinstance(year, (list, tuple)):  # Multiple years?
-                str_year = ["'{}'".format(y) for y in year]
-                where += " AND year IN (" + ", ".join(str_year) + ")"
-            else:
-                where += " AND year = '{}' ".format(year)
-
-        cur = self.con.execute("SELECT year, month, metrics, bibcode "
-                               "FROM pubs "
-                               "WHERE {} "
-                               "ORDER BY date DESC; ".format(where))
-        return cur.fetchall()
-
-    def get_metadata(self, bibcode):
-        """Returns a dictionary of the raw metadata given a bibcode."""
-        cur = self.con.execute("SELECT metrics FROM pubs WHERE bibcode = ?;", [bibcode])
-        return json.loads(cur.fetchone()[0])
 
     def to_markdown(self, title="Publications",
                     group_by_month=False, save_as=None, **kwargs):
@@ -614,13 +533,7 @@ class PublicationDB(object):
                 counts['first author '+affdef['type']][year] = 0
                 counts['top3 authors '+affdef['type']][year] = 0
 
-        #query
-        cur = self.con.execute("select year, metrics from pubs "
-                               f" where mission='{mission}' "
-                               f" and year >= '{year_begin}'"
-                               f" and year <= '{year_end}'"
-                               )
-        articles = cur.fetchall()
+        articles = self.get_articles_by_mission_years(mission, year_begin, year_end)
 
         #for each article, get affiliations for first 3 authors for each article
         for article in articles:
@@ -687,14 +600,7 @@ class PublicationDB(object):
             result[mission] = {}
             for year in range(year_begin, year_end + 1):
                 result[mission][year] = 0
-            q = "SELECT year, COUNT(*) FROM pubs "
-            q += f" WHERE mission = '{mission}' "
-            q += f" AND year >= '{year_begin}' "
-            if instrument: 
-                q += f" AND instruments like '%{instrument}%' "
-            q += " GROUP BY year;"
-            cur = self.con.execute(q)
-            rows = list(cur.fetchall())
+            rows = self.get_articles_by_mission_years_instrument(mission, year_begin, year_end, instrument)
             for row in rows:
                 if int(row[0]) <= year_end:
                     result[mission][int(row[0])] = row[1]
@@ -721,11 +627,8 @@ class PublicationDB(object):
         for mission in missions:
             result[mission] = {}
             for year in range(year_begin, year_end + 1):
-                cur = self.con.execute("SELECT COUNT(*) FROM pubs "
-                                       "WHERE mission = ? "
-                                       "AND year <= ?;",
-                                       [mission, str(year)])
-                result[mission][year] = cur.fetchone()[0]
+                cum = self.get_count_cumulative(mission, str(year))
+                result[mission][year] = cum 
         # Also combine counts
         result['both'] = {}
         for year in range(year_begin, year_end + 1):
@@ -739,7 +642,7 @@ class PublicationDB(object):
             month (str): Used for ADS pubdate param. Format "YYYY-MM" or "YYYY".
         """
         # # git pull reminder
-        # print(HIGHLIGHTS['YELLOW'] +
+        # log.info(HIGHLIGHTS['YELLOW'] +
         #       "Reminder: did you `git pull` kpub before running "
         #       "this command? [y/n] " +
         #       HIGHLIGHTS['END'],
@@ -757,13 +660,18 @@ class PublicationDB(object):
         for query in queries:
             log.info(f"\nQuerying {query['name']} (date={month})")
             data = self.query_ads(query['query'], month)
-            tmp_articles = data['response']['docs'] 
+            tmp_articles = data.get('response', {}).get('docs', [])
 
             #remove those already in our db
             articles = []
-            for a in tmp_articles:
-                if self.article_exists(a): print(f"SKIPPING {a['bibcode']} already in DB.")
-                else: articles.append(a)
+            for art in tmp_articles:
+                if self.article_exists(art): 
+                    log.info(f"SKIPPING {art['bibcode']} already in DB.")
+                    continue
+
+                # add additional filters
+                else: articles.append(art)
+
 
             #loop and add
             for idx, article in enumerate(articles):
@@ -790,7 +698,7 @@ class PublicationDB(object):
 
 
     def push_reminder(self):
-        print(HIGHLIGHTS['RED'] +
+        log.info(HIGHLIGHTS['RED'] +
               "\nREMINDER: Do a `make push` to update the data files in github!" +
               HIGHLIGHTS['END'])
 
@@ -800,7 +708,7 @@ class PublicationDB(object):
         key = self.config.get('ADS_API_KEY')
         outfile = get_pdf_file(bibcode, key)
         if os.path.isfile(outfile):
-            print(f"Opening {outfile}...")
+            log.info(f"Opening {outfile}...")
             webbrowser.open('file://' + os.path.realpath(outfile))
             #webbrowser.get('firefox').open_new_tab('file://' + os.path.realpath(outfile))
 
@@ -880,18 +788,18 @@ def display_abstract(article_dict, colors, highlights=None):
             body = body.replace('<em>', '').replace('</em>', '')
             body_hl += "\n\t" + '"...' + highlight_text(body, colors) + '"'
 
-    print(title)
-    print('-'*len(title))
-    print(abstract)
-    print('')
-    print(f"Acknowledgement highlights: {ack_hl}")
-    print(f"Body highlights: {body_hl}")
-    print('')
-    print('Authors: ' + ', '.join(article_dict.get('author', '')))
-    print('Date: ' + article_dict['pubdate'])
-    print('Status: ' + str(article_dict['property']))
-    print('URL: http://adsabs.harvard.edu/abs/' + article_dict['bibcode'])
-    print('')
+    log.info(title)
+    log.info('-'*len(title))
+    log.info(abstract)
+    log.info('')
+    log.info(f"Acknowledgement highlights: {ack_hl}")
+    log.info(f"Body highlights: {body_hl}")
+    log.info('')
+    log.info('Authors: ' + ', '.join(article_dict.get('author', '')))
+    log.info('Date: ' + article_dict['pubdate'])
+    log.info('Status: ' + str(article_dict['property']))
+    log.info('URL: http://adsabs.harvard.edu/abs/' + article_dict['bibcode'])
+    log.info('')
 
 
 def get_word_match_counts_by_query(bibcode, words, ads_api_key):
@@ -915,24 +823,24 @@ def get_word_match_counts_by_query(bibcode, words, ads_api_key):
         r = requests.get(url, headers=headers)
         data = r.json()
         counts[word] = {'count': 0, 'snippets': []}
-        for doc in data['response']['docs']:
+        for doc in data.get('response', {}).get('docs',[]):
             id = doc['id']
             highlights = data['highlighting'][id]
-            for field, snippets in highlights.items():
-                for snippet in snippets:
-                    counts[word]['count'] += 1
-                    counts[word]['snippets'].append(snippet)
+            for _, snippets in highlights.items():
+                counts[word]['count'] += len(snippets)
+                counts[word]['snippets'] = snippets
 
     #only return counts > 0
     counts = {key:val for key, val in counts.items() if val['count'] != 0}
     return counts
  
 
-def get_word_match_counts_by_pdf(bibcode, words, ads_api_key):
+def get_word_match_counts_by_pdf(bibcode, words, ads_api_key, blacklist=[]):
 
     #get pdf file and text
     outfile = get_pdf_file(bibcode, ads_api_key)
-    text = get_pdf_text(outfile).lower()
+    #text = get_pdf_text(outfile).lower()
+    text = get_pdf_text(outfile)
     text = text.replace("\n",' ')
     text = text.replace("\r",' ')
     text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\xff]', ' ', text)
@@ -942,11 +850,19 @@ def get_word_match_counts_by_pdf(bibcode, words, ads_api_key):
     for word in words:
         counts[word] = {'count': 0, 'snippets': []}
         for ch in (' ', '/', '\(', '-', ':'):
-            find = f"{ch}{word}".lower()
-            for m in re.finditer(find, text):
-                    snippet = text[m.start()-80:m.end()+80]
-                    counts[word]['count'] += 1
-                    counts[word]['snippets'].append(snippet)
+            #find = f"{ch}{word}".lower()
+            find = f"{ch}{word}"
+            for match in re.finditer(find, text):
+                #skip if text in blacklist
+                if 'NGS' in word:
+                    import pdb
+                    pdb.set_trace()
+                snip = text[match.start()-5:match.end()+5]
+                if any(bl in snip for bl in blacklist):
+                    continue
+                snippet = text[match.start()-80:match.end()+80]
+                counts[word]['count'] += 1
+                counts[word]['snippets'].append(snippet)
 
     #only return counts > 0
     counts = {key:val for key, val in counts.items() if val['count'] != 0}
@@ -960,7 +876,7 @@ def get_pdf_file(bibcode, ads_api_key):
     if os.path.isfile(outfile):
         return outfile
 
-    print('\nRetrieving PDF (May take up to a minute)...')
+    log.info('\nRetrieving PDF (May take up to a minute)...')
     url = f'https://ui.adsabs.harvard.edu/link_gateway/{bibcode}/EPRINT_PDF'
     #url = f'https://ui.adsabs.harvard.edu/link_gateway/{bibcode}/PUB_PDF'
     headers = {f'Authorization': f'Bearer {ads_api_key}'}
@@ -983,7 +899,7 @@ def get_pdf_text(outfile):
             text = text.decode("utf-8")
             if text: return text
         except Exception as e:
-            print(f"textract: {method} method failed.  Trying another method...")
+            log.info(f"textract: {method} method failed.  Trying another method...")
     if not text:
         raise Exception("Could not extract PDF text")
 
@@ -1013,7 +929,7 @@ def prompt_grouping(valmap, type):
         prompt += f" [{key}] {val.capitalize()} "
     prompt += " or [] skip? "
 
-    print(prompt, end="")
+    log.info(prompt)
     val = input()
     return val
 
@@ -1203,11 +1119,11 @@ def kpub_import(args=None):
                 time.sleep(0.1)
                 break
             except Exception as e:
-                print("Warning: attempt #{} for {}: error '{}'".format(attempt, col[0], e))
+                log.warning("attempt #{} for {}: error '{}'".format(attempt, col[0], e))
 
     #all done
     log.info(f'\nFinished importing.')
-    print(HIGHLIGHTS['YELLOW'] +
+    log.info(HIGHLIGHTS['YELLOW'] +
           "\nREMINDER: Do a `kpub push` to update the data files in github!" +
           HIGHLIGHTS['END'])
 
@@ -1223,19 +1139,12 @@ def kpub_export(args=None):
         help="Only export one bibcode column.")
     args = parser.parse_args(args)
 
-    q = "SELECT bibcode, mission, science, instruments, archive "
-    q += " FROM pubs WHERE mission != 'unrelated' "
-    if args.archive: 
-        q += " AND archive='1' "
-    q += " ORDER BY bibcode asc;"
-
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
     db = PublicationDB(args.f, config)
-    cur = db.con.execute(q)
-
-    for row in cur.fetchall():
-        if args.bibcodes: print(f'{row[0]}')
-        else:             print(f'{row[0]},{row[1]},{row[2]},{row[3]},{row[4]}')
+    rows = db.select_for_export(args.archive)
+    for row in rows:
+        if args.bibcodes: log.info(f'{row[0]}')
+        else:             log.info(f'{row[0]},{row[1]},{row[2]},{row[3]},{row[4]}')
 
 
 def kpub_spreadsheet(args=None):
@@ -1244,7 +1153,7 @@ def kpub_spreadsheet(args=None):
         from openpyxl import Workbook
         from openpyxl.utils.dataframe import dataframe_to_rows
     except ImportError:
-        print('ERROR: openpyxl needs to be installed for this feature.')
+        log.error('openpyxl needs to be installed for this feature.')
         sys.exit(1)
 
     parser = argparse.ArgumentParser(
@@ -1258,9 +1167,8 @@ def kpub_spreadsheet(args=None):
 
     db = PublicationDB(args.f, config)
     spreadsheet = []
-    cur = db.con.execute("SELECT bibcode, year, month, date, mission, science, metrics "
-                         "FROM pubs WHERE mission != 'unrelated' ORDER BY bibcode;")
-    for row in cur.fetchall():
+    rows = db.select_for_spreadsheet()
+    for row in rows:
         metrics = json.loads(row[6])
         try:
             if 'REFEREED' in metrics['property']:
@@ -1305,7 +1213,7 @@ def kpub_spreadsheet(args=None):
         spreadsheet.append(myrow)
 
     output_fn = 'kpub-publications.xlsx'
-    print('Writing to {}'.format(output_fn))
+    log.info('Writing to {}'.format(output_fn))
     wb = Workbook()
     ws = wb.active
     fieldnames = list(spreadsheet[0].keys())
@@ -1329,6 +1237,6 @@ if __name__ == '__main__':
     elif cmd == 'export':      kpub_export(sys.argv[2:])
     elif cmd == 'stats':       kpub_stats(sys.argv[2:])
     elif cmd == 'spreadsheet': kpub_spreadsheet(sys.argv[2:])
-    else: print("ERROR: Unknown kpub command")
+    else: log.error("Unknown kpub command")
 
 

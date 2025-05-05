@@ -25,65 +25,41 @@ class SQLiteDB:
 
     def connect(self):
         """Connect to the SQLite database."""
-
-        # POSTGRES
-        # POSTGRES_HOST = os.getenv('POSTGRES_HOSTAME')
-        # POSTGRES_USER = os.getenv('POSTGRES_USER')
-        # POSTGRES_PORT = os.getenv('POSTGRES_PORT')
-        # POSTGRES_DB = os.getenv('POSTGRES_DB')
-        # self.con = psycopg2.connect(  host=POSTGRES_HOST,
-        #                               database=POSTGRES_DB,
-        #                               user=POSTGRES_USER,
-        #                               port=POSTGRES_PORT)
-        # """
-        #     SELECT  
-        #     WHERE table_schema='kpub' AND table_name='pubs';
-        # """
         self.con = sql.connect(self.filename)
         self.cursor = self.con.cursor()
 
     def create_table(self):
-        # POSTGRES
-        # """
-        # CREATE TABLE pubs (
-        #     id SERIAL PRIMARY KEY,
-        #     bibcode TEXT UNIQUE NOT NULL,
-        #     year INTEGER NOT NULL,
-        #     month TEXT NOT NULL,
-        #     date DATE NOT NULL,
-        #     mission TEXT,
-        #     science TEXT,
-        #     instruments TEXT,
-        #     archive BOOLEAN,
-        #     metrics JSONB
-        # );"""
         self.con.execute("""
-                         CREATE TABLE pubs(
-                                id UNIQUE,
-                                bibcode UNIQUE,
-                                year,
-                                month,
-                                date,
-                                mission,
-                                science,
-                                instruments,
-                                archive,
-                                metrics)""")
+                         CREATE TABLE pubs (
+                                id INTEGER PRIMARY KEY,
+                                bibcode TEXT UNIQUE,
+                                year INTEGER,
+                                month TEXT,
+                                date TEXT,
+                                mission TEXT,
+                                science TEXT,
+                                instruments TEXT,
+                                archive TEXT,
+                                metrics TEXT, 
+                                affiliation TEXT,
+                                date_modified TEXT DEFAULT (DATETIME('now')),
+                                last_modifier TEXT DEFAULT 'kpub');
+                                """)
 
     def close(self):
         """Close the SQLite database connection."""
         if self.con:
             self.con.close()
 
-    def add_row(self, article, month, mission, science, instruments, archive):
+    def add_row(self, article, month, mission, science, instruments, archive, affiliation):
         
         #insert to db
         try:
             cur = self.con.execute("INSERT INTO pubs "
-                "(id, bibcode, year, month, date, mission, science, instruments, archive, metrics) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "(id, bibcode, year, month, date, mission, science, instruments, archive, affiliation, metrics) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 [article['id'], article['bibcode'], article['year'], month, article['pubdate'],
-                mission, science, instruments, archive, json.dumps(article)])
+                mission, science, instruments, archive, affiliation, json.dumps(article)])
             log.info(f"Inserted {article['bibcode']}")
             self.con.commit()
         except sql.IntegrityError:
@@ -127,11 +103,17 @@ class SQLiteDB:
             else:
                 where += " AND year = '{}' ".format(year)
 
-        cur = self.con.execute("SELECT year, month, metrics, bibcode "
-                               "FROM pubs "
-                               "WHERE {} "
-                               "ORDER BY date DESC; ".format(where))
-        return cur.fetchall()
+        cols = ['year', 'month', 'metrics', 'bibcode']
+        query = "SELECT " + ", ".join(cols)
+        query += " FROM pubs WHERE {} ".format(where)
+        query += " ORDER BY date DESC;"
+        # Execute the query
+        log.debug(query)
+        cur = self.con.execute(query)
+        rows = cur.fetchall()
+        # Convert to a list of dictionaries
+        rows = [ { key:val for key, val in zip(cols, row) } for row in rows]
+        return rows
 
     def get_metadata(self, bibcode):
         """Returns a dictionary of the raw metadata given a bibcode."""
@@ -144,34 +126,41 @@ class SQLiteDB:
         return bool(count)
 
     def select_for_export(self, archive=None):
-        query = "SELECT bibcode, mission, science, instruments, archive "
+        cols = ['bibcode', 'mission', 'science', 'instruments', 'archive', 'affiliation', 'date_modified', 'last_modifier']
+        query = "SELECT " + ", ".join(cols)
         query += " FROM pubs WHERE mission != 'unrelated' "
         if archive: 
             query += " AND archive='1' "
         query += " ORDER BY bibcode asc;"
-
         rows = self.con.execute(query).fetchall()
+        rows = [ { key:val for key, val in zip(cols, row) } for row in rows]
         return rows
 
     def select_for_spreadsheet(self):
-        rows = self.con.execute("SELECT bibcode, year, month, date, mission, science, metrics "
-                            "FROM pubs WHERE mission != 'unrelated' ORDER BY bibcode;")
-        return rows.fetchall()
+        cols = ['bibcode', 'year', 'month', 'date', 'mission', 'science', 'metrics', 'affiliation', 'date_modified', 'last_modifier']
+        query = "SELECT " + ", ".join(cols)
+        query += " FROM pubs WHERE mission != 'unrelated' "
+        query += " ORDER BY bibcode asc;"
+        rows = self.con.execute(query).fetchall()
+        rows = [ { key:val for key, val in zip(cols, row) } for row in rows]
+        return rows
 
 
     def get_articles_by_mission_years(self, mission, year_begin, year_end):
         #query
-        cur = self.con.execute("select year, metrics from pubs "
+        cols = ['year', 'metrics']
+        cur = self.con.execute(f"select {", ".join(cols)} from pubs "
                                f" where mission='{mission}' "
                                f" and year >= '{year_begin}'"
                                f" and year <= '{year_end}'"
                                )
         articles = cur.fetchall()
-
+        articles = [ { key:val for key, val in zip(cols, row) } for row in articles]
         return articles
 
     def get_articles_by_mission_years_instrument(self, mission, year_begin, year_end, instrument):
-        q = "SELECT year, COUNT(*) FROM pubs "
+        cols = ['year', 'COUNT(*)']
+        q = f"SELECT {", ".join(cols)} FROM pubs "
         q += f" WHERE mission = '{mission}' "
         q += f" AND year >= '{year_begin}' "
         if instrument: 
@@ -179,6 +168,7 @@ class SQLiteDB:
         q += " GROUP BY year;"
         cur = self.con.execute(q)
         rows = list(cur.fetchall())
+        rows = [ { key:val for key, val in zip(cols, row) } for row in rows]
         return rows
 
     def get_count_cumulative(self, mission, year):

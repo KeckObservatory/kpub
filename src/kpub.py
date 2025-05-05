@@ -86,7 +86,7 @@ class PublicationDB(SQLiteDB):
         self.config = config
         super().__init__(filename)
 
-    def add(self, article, mission="", science="", instruments="", archive=""):
+    def add(self, article, mission="", science="", instruments="", archive="", affiliation=""):
         """Adds a single article object to the database.
 
         Parameters:
@@ -95,6 +95,7 @@ class PublicationDB(SQLiteDB):
             science (str)
             instruments (str): Pipe-delimited list of instruments
             archive (str): 0 or 1 indicating if archiving reference was found
+            affiliation (str): 'keck', 'unrelated', or 'unknown'
         """
         log.debug('Ingesting {}'.format(article['bibcode']))
 
@@ -104,7 +105,61 @@ class PublicationDB(SQLiteDB):
         article['science'] = science
         article['instruments'] = instruments
         article['archive'] = archive
-        self.add_row(article, month, mission, science, instruments, archive)
+        self.add_row(article, month, mission, science, instruments, archive, affiliation)
+
+    def add_automatically(self, article, statusmsg="", highlights=None):
+        """Adds an article via algorithm. the user can change the classification.
+
+        Parameters:
+            article (json): Article json object returned from ADS API
+        """        
+        # Do not show an article that is already in the database
+        if self.article_exists(article):
+            log.info("{} is already in the database "
+                     "-- skipping.".format(article['bibcode']))
+            return
+
+        # Print paper information to stdout
+        #print(chr(27) + "[2J")  # Clear screen
+        log.info(statusmsg)
+
+        # Prompt the user to classify the paper by mission
+        #NOTE: 'unrelated' is how things are permenantly marked to skip in DB.
+        valmap = {'0': 'unrelated'}
+        missions = self.config.get('missions', [])
+        valmap = add_prompt_valmaps(valmap, missions)
+        missionCounts = self.find_all_snippets(article['bibcode'])
+        mission = 'keck'
+        if len(missionCounts) == 0:
+            log.info("No snippets found.  Marking as unrelated.")
+            mission = 'unrelated'
+
+        # Promput user to confirm instruments?
+        instruments = ''
+        instrCounts = {}
+        if mission != 'unrelated':
+            instrCounts = self.prompt_instruments(article['bibcode'])
+            instruments = "|".join(instrCounts.keys())
+
+        # Get archive ack
+        archive = ''
+        if mission != 'unrelated':
+            archive = self.get_archive_acknowledgement(article['bibcode'])
+
+        affiliation = self.get_affiliation(instrCounts, missionCounts)
+
+        #add it
+        self.add(article, mission=mission, science='', instruments=instruments, archive=archive, affiliation=affiliation)
+
+    @staticmethod
+    def get_affiliation(instrCounts, missionCounts):
+        # Get affiliation
+        affiliation = 'unknown' # default
+        if len(instrCounts) > 0 and len(missionCounts) > 0:
+            affiliation = 'keck' # pretty sure its keck
+        if len(instrCounts) == 0 and len(missionCounts) == 0:
+            affiliation = 'unrelated' # pretty sure its unrelated
+        return affiliation
 
     def add_interactively(self, article, statusmsg="", highlights=None):
         """Adds an article by prompting the user for the classification.
@@ -130,11 +185,12 @@ class PublicationDB(SQLiteDB):
         missions = self.config.get('missions', [])
         valmap = add_prompt_valmaps(valmap, missions)
         mission = ''
+        missionCounts = {}
         while True:
             log.info("\n([p] PDF view  [m] More context)")
             mission = prompt_grouping(valmap, 'Mission')
             if mission.lower() == 'm':
-                self.find_all_snippets(article['bibcode'])
+                missionCounts = self.find_all_snippets(article['bibcode'])
             elif mission.lower() == 'p':
                 self.open_pdf(article['bibcode'])
             else:
@@ -156,16 +212,18 @@ class PublicationDB(SQLiteDB):
         # Promput user to confirm instruments?
         instruments = ''
         if mission != 'unrelated':
-            instruments = self.prompt_instruments(article['bibcode'])
+            instrCounts = self.prompt_instruments(article['bibcode'])
 
         # Get archive ack
         archive = ''
         if mission != 'unrelated':
             archive = self.get_archive_acknowledgement(article['bibcode'])
 
+        affiliation = self.get_affiliation(instrCounts, missionCounts)
+
         #add it
         self.add(article, mission=mission, science=science, instruments=instruments,
-                 archive=archive)
+                 archive=archive, affiliation=affiliation)
 
 
     def find_all_snippets(self, bibcode):
@@ -174,7 +232,6 @@ class PublicationDB(SQLiteDB):
         missions = self.config.get('missions', [])
         instruments = self.config.get('instruments', [])
         blacklist = self.config.get('blacklist', [])
-        pdb.set_trace()
         ads_api_key = self.config.get('ADS_API_KEY')
 
         #if not config for this, then return empty array
@@ -257,11 +314,8 @@ class PublicationDB(SQLiteDB):
                 snippet = highlight_text(snippet, self.config['colors'])
                 log.info(f'"... {snippet}"')
 
-        #prompt for user confirmation
         instr_str = "|".join(counts.keys())
-        val = input_with_prefill('\n=> Edit instrument list (pipe-seperated): ', instr_str)
-        val = val.replace(' ', '')
-        return val
+        return counts
 
 
     def add_by_bibcode(self, bibcode, interactive=False, **kwargs):
@@ -293,18 +347,18 @@ class PublicationDB(SQLiteDB):
         """Returns the publication list in markdown format.
         """
         if group_by_month:
-            group_idx = 1
+            group_idx = 'month' 
         else:
-            group_idx = 0  # by year
+            group_idx = 'year'  # by year
 
         articles = collections.OrderedDict({})
         for row in self.query(**kwargs):
-            group = row[group_idx]
+            group = str(row[group_idx])
             if group.endswith("-00"):
                 group = group[:-3] + "-01"
             if group not in articles:
                 articles[group] = []
-            art = json.loads(row[2])
+            art = json.loads(row['metrics'])
             # The markdown template depends on "property" being iterable
             if art["property"] is None:
                 art["property"] = []
@@ -383,7 +437,7 @@ class PublicationDB(SQLiteDB):
         metrics['refereed_count'] = 0
         metrics['citation_count'] = 0
         metrics['phd_count'] = 0
-        for mission in missions:
+        for mission in [*missions, 'unknown', 'unrelated']:
             metrics[f'{mission}_count'] = 0
             metrics[f'{mission}_refereed_count'] = 0
             metrics[f'{mission}_citation_count'] = 0
@@ -400,7 +454,7 @@ class PublicationDB(SQLiteDB):
             first_authors[mission] = []
 
         for article in self.query(year=year):
-            api_response = article[2]
+            api_response = article['metrics']
             js = json.loads(api_response)
 
             #general count
@@ -422,8 +476,8 @@ class PublicationDB(SQLiteDB):
             #author counts
             authors['all'].extend(js['author_norm'])
             first_authors['all'].append(js['first_author_norm'])
-            authors[js['mission']].extend(js['author_norm'])
-            first_authors[js['mission']].append(js['first_author_norm'])
+            authors[mission].extend(js['author_norm'])
+            first_authors[mission].append(js['first_author_norm'])
 
             #refereed counts
             try:
@@ -458,41 +512,41 @@ class PublicationDB(SQLiteDB):
     def get_all(self, mission=None, science=None):
         """Returns a list of dictionaries, one entry per publication."""
         articles = self.query(mission=mission, science=science)
-        return [json.loads(art[2]) for art in articles]
+        return [json.loads(art['metrics']) for art in articles]
 
     def get_most_cited(self, mission=None, science=None, top=10):
         """Returns the most-cited publications."""
         bibcodes, citations = [], []
         articles = self.query(mission=mission, science=science)
         for article in articles:
-            api_response = article[2]
+            api_response = article['metrics']
             js = json.loads(api_response)
-            bibcodes.append(article[3])
+            bibcodes.append(article['bibcode'])
             if js["citation_count"] is None:
                 citations.append(0)
             else:
                 citations.append(js["citation_count"])
         idx_top = np.argsort(citations)[::-1][0:top]
-        return [json.loads(articles[idx][2]) for idx in idx_top]
+        return [json.loads(articles[idx]['metrics']) for idx in idx_top]
 
     def get_most_read(self, mission=None, science=None, top=10):
         """Returns the most-cited publications."""
         bibcodes, citations = [], []
         articles = self.query(mission=mission, science=science)
         for article in articles:
-            api_response = article[2]
+            api_response = article['metrics']
             js = json.loads(api_response)
-            bibcodes.append(article[3])
+            bibcodes.append(article['bibcode'])
             citations.append(js["read_count"])
         idx_top = np.argsort(citations)[::-1][0:top]
-        return [json.loads(articles[idx][2]) for idx in idx_top]
+        return [json.loads(articles[idx]['metrics']) for idx in idx_top]
 
     def get_most_active_first_authors(self, min_papers=10):
         """Returns names and paper counts of the most active first authors."""
         articles = self.query()
         authors = {}
         for article in articles:
-            api_response = article[2]
+            api_response = article['metrics']
             js = json.loads(api_response)
             first_author = js["first_author_norm"]
             try:
@@ -509,7 +563,7 @@ class PublicationDB(SQLiteDB):
         articles = self.query()
         authors = {}
         for article in articles:
-            api_response = article[2]
+            api_response = article['metrics']
             js = json.loads(api_response)
             for auth in js["author_norm"]:
                 try:
@@ -602,8 +656,8 @@ class PublicationDB(SQLiteDB):
                 result[mission][year] = 0
             rows = self.get_articles_by_mission_years_instrument(mission, year_begin, year_end, instrument)
             for row in rows:
-                if int(row[0]) <= year_end:
-                    result[mission][int(row[0])] = row[1]
+                if int(row['year']) <= year_end:
+                    result[mission][int(row['year'])] = row['COUNT(*)']
         # Also combine counts
         result['both'] = {}
         for year in range(year_begin, year_end + 1):
@@ -690,7 +744,8 @@ class PublicationDB(SQLiteDB):
                     f"Showing article {idx+1} out of {len(articles)} ({query['name']} query)"
                     " **********\n")
                 highlights = data['highlighting'][article['id']]
-                self.add_interactively(article, statusmsg=statusmsg, highlights=highlights)
+                # self.add_interactively(article, statusmsg=statusmsg, highlights=highlights)
+                self.add_automatically(article, statusmsg=statusmsg, highlights=highlights)
 
         #all done
         log.info(f'\nFinished reviewing all articles for {month}.')
@@ -854,7 +909,7 @@ def get_word_match_counts_by_pdf(bibcode, words, ads_api_key, blacklist=[]):
             find = f"{ch}{word}"
             for match in re.finditer(find, text):
                 #skip if text in blacklist
-                if 'NGS' in word:
+                if 'NGS' in match.group(0):
                     import pdb
                     pdb.set_trace()
                 snip = text[match.start()-5:match.end()+5]
@@ -1040,10 +1095,11 @@ def kpub_update(args=None):
 
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
 
-    PublicationDB(args.f, config).update(month=args.month)
+    db = PublicationDB(args.f, config)
+    db.update(month=args.month)
 
 
-def kpub_add(args=None):
+def kpub_add(args=None, interactive=False):
     """Add a publication with a known ADS bibcode."""
     parser = argparse.ArgumentParser(
         description="Add a paper to the publication list.")
@@ -1058,7 +1114,7 @@ def kpub_add(args=None):
 
     db = PublicationDB(args.f, config)
     for bibcode in args.bibcode:
-        db.add_by_bibcode(bibcode, interactive=True)
+        db.add_by_bibcode(bibcode, interactive=interactive)
 
 
 def kpub_delete(args=None):
@@ -1143,8 +1199,8 @@ def kpub_export(args=None):
     db = PublicationDB(args.f, config)
     rows = db.select_for_export(args.archive)
     for row in rows:
-        if args.bibcodes: log.info(f'{row[0]}')
-        else:             log.info(f'{row[0]},{row[1]},{row[2]},{row[3]},{row[4]}')
+        if args.bibcodes: log.info(f'{row["bibcode"]}')
+        else:             log.info(f'{row}')
 
 
 def kpub_spreadsheet(args=None):
@@ -1169,7 +1225,7 @@ def kpub_spreadsheet(args=None):
     spreadsheet = []
     rows = db.select_for_spreadsheet()
     for row in rows:
-        metrics = json.loads(row[6])
+        metrics = json.loads(row['metrics'])
         try:
             if 'REFEREED' in metrics['property']:
                 refereed = 'REFEREED'
@@ -1181,9 +1237,9 @@ def kpub_spreadsheet(args=None):
             refereed = ''
         # Compute citations per year
         try:
-            dateobj = datetime.datetime.strptime(row[3], '%Y-%m-00')
+            dateobj = datetime.datetime.strptime(row['date'], '%Y-%m-00')
         except ValueError:
-            dateobj = datetime.datetime.strptime(row[3], '%Y-00-00')
+            dateobj = datetime.datetime.strptime(row['date'], '%Y-00-00')
         publication_age = datetime.datetime.now() - dateobj
         try:
             citations_per_year = metrics['citation_count'] / (publication_age.days / 365)
@@ -1191,11 +1247,13 @@ def kpub_spreadsheet(args=None):
             citations_per_year = 0
 
         myrow = collections.OrderedDict([
-                    ('bibcode', row[0]),
-                    ('year', row[1]),
-                    ('date', row[3]),
-                    ('mission', row[4]),
-                    ('science', row[5]),
+                    ('bibcode', row['bibcode']),
+                    ('year', row['year']),
+                    ('date', row['date']),
+                    ('mission', row['mission']),
+                    ('science', row['science']),
+                    ('date_modified', row['date_modified']),
+                    ('last_modifier', row['last_modifier']),
                     ('refereed', refereed),
                     ('citation_count', metrics['citation_count']),
                     ('citations_per_year', round(citations_per_year, 2)),
@@ -1208,6 +1266,7 @@ def kpub_spreadsheet(args=None):
                     ('co_author_norm', str(metrics['author_norm'])),
                     ('instruments', str(metrics['instruments'])),
                     ('archive', str(metrics['archive'])),
+                    ('affiliation', str(row['affiliation'])),
                     ('affiliations', str(metrics['aff']))
                     ])
         spreadsheet.append(myrow)
@@ -1232,6 +1291,7 @@ if __name__ == '__main__':
     if   cmd == 'update':      kpub_update(sys.argv[2:])
     elif cmd == 'plot':        kpub_plot(sys.argv[2:])
     elif cmd == 'add':         kpub_add(sys.argv[2:])
+    elif cmd == 'add_interactively': kpub_add(sys.argv[2:], True)
     elif cmd == 'delete':      kpub_delete(sys.argv[2:])
     elif cmd == 'import':      kpub_import(sys.argv[2:])
     elif cmd == 'export':      kpub_export(sys.argv[2:])

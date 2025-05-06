@@ -1,5 +1,13 @@
 {
-
+  #MONGODB connection string
+  #NOTE: This is the connection string to your MongoDB instance.
+  "mongodb": {
+      server: "vm-sumongo.keck.hawaii.edu:27017",
+      user: "api_user",
+      pwd: "",
+      database: "kpub",
+      collection: "articles",
+    },
   #ADS API Key 
   #NOTE: Create an account at https://ui.adsabs.harvard.edu/, generate an ADS API key and copy it here.
   "ADS_API_KEY": "",

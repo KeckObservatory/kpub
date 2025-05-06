@@ -12,8 +12,6 @@ import json
 import datetime
 import argparse
 import collections
-import sqlite3 as sql
-import psycopg2 
 import numpy as np
 import yaml
 import requests
@@ -24,6 +22,7 @@ import logging
 import jinja2
 import pdb
 from sql_lite_db import SQLiteDB
+from db_conn_mongo import MongoDB
 #init logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('KPUB')
@@ -74,7 +73,8 @@ HIGHLIGHTS = {
 }
 
 
-class PublicationDB(SQLiteDB):
+#class PublicationDB(SQLiteDB):
+class PublicationDB(MongoDB):
     """Class wrapping the SQLite database containing the publications.
 
     Parameters
@@ -84,15 +84,16 @@ class PublicationDB(SQLiteDB):
     """
     def __init__(self, filename=DEFAULT_DB, config=None):
         self.config = config
-        super().__init__(filename)
+        #super().__init__(filename)
+        super().__init__(self.config, 'kpub')
 
-    def add(self, article, mission="", science="", instruments="", archive="", affiliation=""):
+    def add(self, article, mission, snippits, instruments, archive, affiliation):
         """Adds a single article object to the database.
 
         Parameters:
             article (json): Article json object returned from ADS API
             mission (str)
-            science (str)
+            snippits (JSON) : Snippits found in the article
             instruments (str): Pipe-delimited list of instruments
             archive (str): 0 or 1 indicating if archiving reference was found
             affiliation (str): 'keck', 'unrelated', or 'unknown'
@@ -102,12 +103,22 @@ class PublicationDB(SQLiteDB):
         # Store the extra metadata in the json string
         month = article['pubdate'][0:7]
         article['mission'] = mission
-        article['science'] = science
         article['instruments'] = instruments
         article['archive'] = archive
-        self.add_row(article, month, mission, science, instruments, archive, affiliation)
+        self.add_row(article, month, mission, snippits, instruments, archive, affiliation)
 
-    def add_automatically(self, article, statusmsg="", highlights=None):
+
+    @staticmethod
+    def get_affiliation(snippits):
+        # Get affiliation
+        affiliation = 'unknown' # default
+        if len(snippits) > 0 and 'keck' in snippits.keys():
+            affiliation = 'keck' # pretty sure its keck
+        if len(snippits) == 0 and not 'keck' in snippits.keys():
+            affiliation = 'unrelated' # pretty sure its unrelated
+        return affiliation
+
+    def add_article(self, article, statusmsg="", interactive=False):
         """Adds an article via algorithm. the user can change the classification.
 
         Parameters:
@@ -128,103 +139,59 @@ class PublicationDB(SQLiteDB):
         valmap = {'0': 'unrelated'}
         missions = self.config.get('missions', [])
         valmap = add_prompt_valmaps(valmap, missions)
-        missionCounts = self.find_all_snippets(article['bibcode'])
-        mission = 'keck'
-        if len(missionCounts) == 0:
-            log.info("No snippets found.  Marking as unrelated.")
-            mission = 'unrelated'
 
-        # Promput user to confirm instruments?
-        instruments = ''
-        instrCounts = {}
-        if mission != 'unrelated':
-            instrCounts = self.prompt_instruments(article['bibcode'])
-            instruments = "|".join(instrCounts.keys())
-
-        # Get archive ack
-        archive = ''
-        if mission != 'unrelated':
-            archive = self.get_archive_acknowledgement(article['bibcode'])
-
-        affiliation = self.get_affiliation(instrCounts, missionCounts)
-
-        #add it
-        self.add(article, mission=mission, science='', instruments=instruments, archive=archive, affiliation=affiliation)
-
-    @staticmethod
-    def get_affiliation(instrCounts, missionCounts):
-        # Get affiliation
-        affiliation = 'unknown' # default
-        if len(instrCounts) > 0 and len(missionCounts) > 0:
-            affiliation = 'keck' # pretty sure its keck
-        if len(instrCounts) == 0 and len(missionCounts) == 0:
-            affiliation = 'unrelated' # pretty sure its unrelated
-        return affiliation
-
-    def add_interactively(self, article, statusmsg="", highlights=None):
-        """Adds an article by prompting the user for the classification.
-
-        Parameters:
-            article (json): Article json object returned from ADS API
-        """        
-
-        # Do not show an article that is already in the database
-        if self.article_exists(article):
-            log.info("{} is already in the database "
-                     "-- skipping.".format(article['bibcode']))
-            return
-
-        # Print paper information to stdout
-        #print(chr(27) + "[2J")  # Clear screen
-        log.info(statusmsg)
-        display_abstract(article, self.config['colors'], highlights)
-
-        # Prompt the user to classify the paper by mission
-        #NOTE: 'unrelated' is how things are permenantly marked to skip in DB.
-        valmap = {'0': 'unrelated'}
-        missions = self.config.get('missions', [])
-        valmap = add_prompt_valmaps(valmap, missions)
-        mission = ''
-        missionCounts = {}
-        while True:
+        # snippits are instrument and 'keck' matches
+        if interactive:
             log.info("\n([p] PDF view  [m] More context)")
             mission = prompt_grouping(valmap, 'Mission')
-            if mission.lower() == 'm':
-                missionCounts = self.find_all_snippets(article['bibcode'])
-            elif mission.lower() == 'p':
-                self.open_pdf(article['bibcode'])
-            else:
-                break
+        else:
+            mission = 'keck'
 
-        #Hitting return or any unrecognized key results in skip
-        mission = valmap.get(mission, '')
-        if not mission:
-            return
+        if mission.lower() == 'm' or mission.lower() == 'keck':
+            snippits = self.find_all_snippets(article['bibcode'])
+        elif mission.lower() == 'p':
+            self.open_pdf(article['bibcode'])
 
-        # Prompt the user to classify the paper by science
-        science = ''
-        sciences = self.config.get('sciences', [])
-        if mission != 'unrelated' and sciences:
-            valmap = {}
-            valmap = add_prompt_valmaps(valmap, sciences)
-            science = prompt_grouping(valmap, 'Science')
-
-        # Promput user to confirm instruments?
         instruments = ''
-        if mission != 'unrelated':
-            instrCounts = self.prompt_instruments(article['bibcode'])
+        if len(snippits) == 0:
+            log.info("No snippets found.  Marking as unrelated.")
+            mission = 'unrelated'
+        instruments = "|".join([ x for x in snippits.keys() if x not in missions])
 
         # Get archive ack
         archive = ''
         if mission != 'unrelated':
             archive = self.get_archive_acknowledgement(article['bibcode'])
 
-        affiliation = self.get_affiliation(instrCounts, missionCounts)
+        affiliation = self.get_affiliation(snippits)
 
         #add it
-        self.add(article, mission=mission, science=science, instruments=instruments,
-                 archive=archive, affiliation=affiliation)
+        self.add(article, mission=mission, snippits=snippits, instruments=instruments, archive=archive, affiliation=affiliation)
 
+    def prompt_instruments(self, bibcode):
+        '''Search for instances of instrument strings in full article.'''
+
+        #if not config for this, then return empty array
+        instruments = self.config.get('instruments')
+        blacklist = self.config.get('blacklist', [])
+        if not instruments:
+            return ''
+
+        #try two methods for finding matches
+        ads_api_key = self.config.get('ADS_API_KEY')
+        try:
+            snippits = get_word_match_counts_by_pdf(bibcode, instruments, ads_api_key, blacklist)
+        except Exception as e:
+            log.warning("Could not parse PDF file.  Using alternate ADS query method...")
+            snippits = get_word_match_counts_by_query(bibcode, instruments, ads_api_key)
+
+        #log.info snippets
+        log.info("\nINSTRUMENT SNIPPETS FOUND:")
+        for instr, count in snippits.items():
+            for snippet in count['snippets']:
+                snippet = highlight_text(snippet, self.config['colors'])
+                log.info(f'"... {snippet}"')
+        return snippits 
 
     def find_all_snippets(self, bibcode):
 
@@ -244,7 +211,7 @@ class PublicationDB(SQLiteDB):
         #try two methods for finding matches
         try:
             counts = get_word_match_counts_by_pdf(bibcode, words, ads_api_key, blacklist)
-        except Exception as e:
+        except Exception as err:
             log.warning("Could not parse PDF file.  Using alternate ADS query method...")
             counts = get_word_match_counts_by_query(bibcode, words, ads_api_key)
 
@@ -290,35 +257,9 @@ class PublicationDB(SQLiteDB):
         return val
 
 
-    def prompt_instruments(self, bibcode):
-        '''Search for instances of instrument strings in full article.'''
-
-        #if not config for this, then return empty array
-        instruments = self.config.get('instruments')
-        blacklist = self.config.get('blacklist', [])
-        if not instruments:
-            return ''
-
-        #try two methods for finding matches
-        ads_api_key = self.config.get('ADS_API_KEY')
-        try:
-            counts = get_word_match_counts_by_pdf(bibcode, instruments, ads_api_key, blacklist)
-        except Exception as e:
-            log.warning("Could not parse PDF file.  Using alternate ADS query method...")
-            counts = get_word_match_counts_by_query(bibcode, instruments, ads_api_key)
-
-        #log.info snippets
-        log.info("\nINSTRUMENT SNIPPETS FOUND:")
-        for instr, count in counts.items():
-            for snippet in count['snippets']:
-                snippet = highlight_text(snippet, self.config['colors'])
-                log.info(f'"... {snippet}"')
-
-        instr_str = "|".join(counts.keys())
-        return counts
 
 
-    def add_by_bibcode(self, bibcode, interactive=False, **kwargs):
+    def add_by_bibcode(self, bibcode, interactive=False):
         #TODO: NOTE: Without querying for 'keck' in full text, highlights will not be returned.
         bibcode = bibcode.replace('&', '%26')
         q = f"identifier:{bibcode}"
@@ -337,10 +278,7 @@ class PublicationDB(SQLiteDB):
             if self.article_exists(article):
                 log.warning("{} is already in the db.".format(article['bibcode']))
             else:
-                if interactive:
-                    self.add_interactively(article)
-                else:
-                    self.add(article, **kwargs)
+                self.add_article(article, interactive=interactive)
 
     def to_markdown(self, title="Publications",
                     group_by_month=False, save_as=None, **kwargs):
@@ -392,7 +330,6 @@ class PublicationDB(SQLiteDB):
     def plot(self):
         """Saves beautiful plot of the database."""
         missions = self.config.get('missions', [])
-        sciences = self.config.get('sciences', [])
         plots_cfg = self.config.get('plots', [])
         for ext in ['pdf', 'png']:
             plot.plot_by_year(self, f"{PLOTDIR}/kpub-publication-rate.{ext}", 
@@ -402,7 +339,6 @@ class PublicationDB(SQLiteDB):
             for mission in missions:
                 plot.plot_by_year(self, f"{PLOTDIR}/kpub-publication-rate-{mission}.{ext}", 
                                  first_year=plots_cfg['year_begin'], missions=[mission])
-            plot.plot_science_piechart(self, f"{PLOTDIR}/kpub-piechart.{ext}", sciences=sciences)
             plot.plot_author_count(self, f"{PLOTDIR}/kpub-author-count.{ext}", first_year=plots_cfg['year_begin'])
 
         #bokeh plots
@@ -425,11 +361,9 @@ class PublicationDB(SQLiteDB):
         * # of unique author surnames.
         * # of citations.
         * # of peer-reviewed pubs.
-        * # of per mission and science
         """
 
         missions = self.config.get('missions', [])
-        sciences = self.config.get('sciences', [])
 
         #init stats
         metrics = {}
@@ -442,8 +376,6 @@ class PublicationDB(SQLiteDB):
             metrics[f'{mission}_refereed_count'] = 0
             metrics[f'{mission}_citation_count'] = 0
             metrics[f'{mission}_phd_count'] = 0
-        for science in sciences:
-            metrics[f'{science}_count'] = 0
 
 
         authors, first_authors = {}, {}
@@ -465,13 +397,6 @@ class PublicationDB(SQLiteDB):
             if "PhDT" in js['bibcode']:
                 metrics["phd_count"] += 1
                 metrics[f"{js['mission']}_phd_count"] += 1
-
-            #science counts
-            try:
-                metrics[f"{js['science']}_count"] += 1
-            except KeyError:
-                pass
-                #log.warning(f"{js['bibcode']}: no science category")
 
             #author counts
             authors['all'].extend(js['author_norm'])
@@ -504,20 +429,18 @@ class PublicationDB(SQLiteDB):
         pubcount = metrics["publication_count"]
         for mission in missions:
             metrics[mission+"_fraction"] = metrics[mission+"_count"] / pubcount if pubcount > 0 else 0
-        for science in sciences:
-            metrics[science+"_fraction"] = metrics[science+"_count"] / pubcount if pubcount > 0 else 0
     
         return metrics
 
-    def get_all(self, mission=None, science=None):
+    def get_all(self, mission=None):
         """Returns a list of dictionaries, one entry per publication."""
-        articles = self.query(mission=mission, science=science)
+        articles = self.query(mission=mission)
         return [json.loads(art['metrics']) for art in articles]
 
-    def get_most_cited(self, mission=None, science=None, top=10):
+    def get_most_cited(self, mission=None, top=10):
         """Returns the most-cited publications."""
         bibcodes, citations = [], []
-        articles = self.query(mission=mission, science=science)
+        articles = self.query(mission=mission)
         for article in articles:
             api_response = article['metrics']
             js = json.loads(api_response)
@@ -529,10 +452,10 @@ class PublicationDB(SQLiteDB):
         idx_top = np.argsort(citations)[::-1][0:top]
         return [json.loads(articles[idx]['metrics']) for idx in idx_top]
 
-    def get_most_read(self, mission=None, science=None, top=10):
+    def get_most_read(self, mission=None, top=10):
         """Returns the most-cited publications."""
         bibcodes, citations = [], []
-        articles = self.query(mission=mission, science=science)
+        articles = self.query(mission=mission)
         for article in articles:
             api_response = article['metrics']
             js = json.loads(api_response)
@@ -743,9 +666,7 @@ class PublicationDB(SQLiteDB):
                 statusmsg = ("\n\n\n\n\n\n********** "
                     f"Showing article {idx+1} out of {len(articles)} ({query['name']} query)"
                     " **********\n")
-                highlights = data['highlighting'][article['id']]
-                # self.add_interactively(article, statusmsg=statusmsg, highlights=highlights)
-                self.add_automatically(article, statusmsg=statusmsg, highlights=highlights)
+                self.add_article(article, statusmsg=statusmsg, interactive=False)
 
         #all done
         log.info(f'\nFinished reviewing all articles for {month}.')
@@ -909,9 +830,6 @@ def get_word_match_counts_by_pdf(bibcode, words, ads_api_key, blacklist=[]):
             find = f"{ch}{word}"
             for match in re.finditer(find, text):
                 #skip if text in blacklist
-                if 'NGS' in match.group(0):
-                    import pdb
-                    pdb.set_trace()
                 snip = text[match.start()-5:match.end()+5]
                 if any(bl in snip for bl in blacklist):
                     continue
@@ -1002,8 +920,6 @@ def kpub_stats(args=None):
         description="Save the publication stats in markdown format.")
     parser.add_argument('-f', metavar='dbfile', type=str, default=DEFAULT_DB,
                         help="Location of the publication list db. Defaults to ~/.kpub.db.")
-    parser.add_argument('--science', dest="science", type=str, default=None,
-                        help="Only show a particular science. Defaults to all.")
     parser.add_argument('--mission', dest="mission", type=str, default=None,
                         help="Only show a particular mission. Defaults to all.")
     parser.add_argument('-m', '--month', action='store_true',
@@ -1027,15 +943,6 @@ def kpub_stats(args=None):
         pubdb.save_markdown(output_fn,
                          group_by_month=bymonth,
                          title=f"{title} publications{title_suffix}")
-
-        sciences = config.get('sciences', [])
-        if len(sciences) > 1:
-            for science in sciences:
-                output_fn = f"{MDDIR}/kpub-{config['prepend']}-publications-{science}{suffix}.md"
-                pubdb.save_markdown(output_fn,
-                                 group_by_month=bymonth,
-                                 science=science,
-                                 title=f"{title} {science} publications{title_suffix}")
 
         missions = config.get('missions', [])
         if len(missions) > 1:
@@ -1136,46 +1043,38 @@ def kpub_delete(args=None):
 
 
 def kpub_import(args=None):
-    """Import publications from a csv file.
+    """Import publications from a json file.
 
-    The csv file must contain entries of the form "bibcode,mission,science".
+    The json file must contain entries of the form "bibcode,mission".
     The actual metadata of each publication will be grabbed using the ADS API,
     hence this routine may take 10-20 minutes to complete.
     """
     parser = argparse.ArgumentParser(
         description="Batch-import papers into the publication list "
-                    "from a CSV file. The CSV file must have three columns "
-                    "(bibcode,mission,science) separated by commas. "
+                    "from a JSON file. The JSON file must have bibcode"
                     "For example: '2004ApJ...610.1199G,kepler,astrophysics'.")
     parser.add_argument('-f', metavar='dbfile',
                         type=str, default=DEFAULT_DB,
                         help="Location of the publication list db. Defaults to ~/.kpub.db.")
-    parser.add_argument('csvfile',
-                        help="Filename of the csv file to ingest.")
+    parser.add_argument('jsonfile',
+                        help="Filename of the JSON file to ingest.")
     args = parser.parse_args(args)
 
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
 
     db = PublicationDB(args.f, config)
-    import time
-    for line in open(args.csvfile, 'r').readlines():
-        line = line.strip()
-        if not line:
-            continue
-        for attempt in range(5):
-            try:
-                col = line.strip().split(',')  # Naive csv parsing
-                bibcode = col[0]
-                mission = col[1]
-                science = col[2]
-                instrs  = col[3]
-                archive = col[4]
-                db.add_by_bibcode(bibcode, mission=mission, science=science,
-                    instruments=instrs, archive=archive)
-                time.sleep(0.1)
-                break
-            except Exception as e:
-                log.warning("attempt #{} for {}: error '{}'".format(attempt, col[0], e))
+    with open(args.jsonfile, 'r') as f:
+        rows = json.load()
+    for row in rows:
+        try:
+            bibcode = row['bibcode'] 
+            mission = row['mission'] 
+            instrs  = row['instruments'] 
+            archive = row['archive'] 
+            db.add_by_bibcode(bibcode, mission=mission,
+                instruments=instrs, archive=archive, interactive=False)
+        except Exception as err:
+            log.warning("attempt #{} for {}: error '{}'".format(row, err))
 
     #all done
     log.info(f'\nFinished importing.')
@@ -1201,6 +1100,9 @@ def kpub_export(args=None):
     for row in rows:
         if args.bibcodes: log.info(f'{row["bibcode"]}')
         else:             log.info(f'{row}')
+    with open('kpub-publications.json', 'w') as f:
+        json.dump(rows, f, indent=4, sort_keys=True)
+    log.info('Exported {} rows to kpub-publications.json'.format(len(rows)))
 
 
 def kpub_spreadsheet(args=None):
@@ -1251,7 +1153,6 @@ def kpub_spreadsheet(args=None):
                     ('year', row['year']),
                     ('date', row['date']),
                     ('mission', row['mission']),
-                    ('science', row['science']),
                     ('date_modified', row['date_modified']),
                     ('last_modifier', row['last_modifier']),
                     ('refereed', refereed),

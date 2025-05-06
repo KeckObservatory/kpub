@@ -37,7 +37,7 @@ class SQLiteDB:
                                 month TEXT,
                                 date TEXT,
                                 mission TEXT,
-                                science TEXT,
+                                snippits TEXT,
                                 instruments TEXT,
                                 archive TEXT,
                                 metrics TEXT, 
@@ -51,15 +51,15 @@ class SQLiteDB:
         if self.con:
             self.con.close()
 
-    def add_row(self, article, month, mission, science, instruments, archive, affiliation):
+    def add_row(self, article, month, mission, snippits, instruments, archive, affiliation):
         
         #insert to db
         try:
             cur = self.con.execute("INSERT INTO pubs "
-                "(id, bibcode, year, month, date, mission, science, instruments, archive, affiliation, metrics) "
+                "(id, bibcode, year, month, date, mission, snippits, instruments, archive, affiliation, metrics) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 [article['id'], article['bibcode'], article['year'], month, article['pubdate'],
-                mission, science, instruments, archive, affiliation, json.dumps(article)])
+                mission, json.dumps(snippits), instruments, archive, affiliation, json.dumps(article)])
             log.info(f"Inserted {article['bibcode']}")
             self.con.commit()
         except sql.IntegrityError:
@@ -70,15 +70,13 @@ class SQLiteDB:
         log.info('Deleted {} row(s).'.format(cur.rowcount))
         self.con.commit()
 
-    def query(self, mission=None, science=None, year=None):
-        """Query the database by mission and/or science and/or year.
+    def query(self, mission=None, year=None):
+        """Query the database by mission and/or year.
 
         Parameters
         ----------
         mission : str
             Examples: 'kepler' or 'k2'
-        science : str
-            Examples: 'exoplanets' or 'astrophysics'
         year : int or list of int
             Examples: 2009, 2010, [2009, 2010], ...
 
@@ -92,9 +90,6 @@ class SQLiteDB:
             where = "(mission != 'unrelated') "
         else:
             where = "(mission = '{}') ".format(mission)
-
-        if science is not None:
-            where += " AND science = '{}' ".format(science)
 
         if year is not None:
             if isinstance(year, (list, tuple)):  # Multiple years?
@@ -120,13 +115,19 @@ class SQLiteDB:
         cur = self.con.execute("SELECT metrics FROM pubs WHERE bibcode = ?;", [bibcode])
         return json.loads(cur.fetchone()[0])
 
+    def get_snippits(self, bibcode):
+        """Returns a dictionary of the snippits given a bibcode."""
+        cur = self.con.execute("SELECT snippits FROM pubs WHERE bibcode = ?;", [bibcode])
+        snippit = json.loads(cur.fetchone()['snippits'])
+        return snippit 
+
     def article_exists(self, article):
         count = self.con.execute("SELECT COUNT(*) FROM pubs WHERE id = ? OR bibcode = ?;",
                                  [article['id'], article['bibcode']]).fetchone()[0]
         return bool(count)
 
     def select_for_export(self, archive=None):
-        cols = ['bibcode', 'mission', 'science', 'instruments', 'archive', 'affiliation', 'date_modified', 'last_modifier']
+        cols = ['bibcode', 'mission', 'instruments', 'archive', 'affiliation', 'date_modified', 'last_modifier']
         query = "SELECT " + ", ".join(cols)
         query += " FROM pubs WHERE mission != 'unrelated' "
         if archive: 
@@ -137,7 +138,7 @@ class SQLiteDB:
         return rows
 
     def select_for_spreadsheet(self):
-        cols = ['bibcode', 'year', 'month', 'date', 'mission', 'science', 'metrics', 'affiliation', 'date_modified', 'last_modifier']
+        cols = ['bibcode', 'year', 'month', 'date', 'mission', 'metrics', 'affiliation', 'date_modified', 'last_modifier']
         query = "SELECT " + ", ".join(cols)
         query += " FROM pubs WHERE mission != 'unrelated' "
         query += " ORDER BY bibcode asc;"
@@ -163,6 +164,7 @@ class SQLiteDB:
         q = f"SELECT {", ".join(cols)} FROM pubs "
         q += f" WHERE mission = '{mission}' "
         q += f" AND year >= '{year_begin}' "
+        q += f" AND year <= '{year_end}' "
         if instrument: 
             q += f" AND instruments like '%{instrument}%' "
         q += " GROUP BY year;"

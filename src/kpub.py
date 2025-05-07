@@ -667,6 +667,7 @@ class PublicationDB(MongoDB):
         #all done
         log.info(f'\nFinished reviewing all articles for {month}.')
         self.push_reminder()
+        return True
 
 
     def push_reminder(self):
@@ -991,7 +992,8 @@ def kpub_update(args=None):
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
 
     db = PublicationDB(config)
-    db.update(month=args.month)
+    success = db.update(month=args.month)
+    return success
 
 
 def kpub_add(args=None, interactive=False):

@@ -64,7 +64,7 @@ class MongoDB:
 
     def __del__(self):
         """Destructor to close the MongoDB connection."""
-        if not self.client is None:
+        if hasattr(self, 'client'):
             try:
                 self.client.close()
             except Exception as e:

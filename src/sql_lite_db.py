@@ -150,7 +150,7 @@ class SQLiteDB:
     def get_articles_by_mission_years(self, mission, year_begin, year_end):
         #query
         cols = ['year', 'metrics']
-        cur = self.con.execute(f"select {", ".join(cols)} from pubs "
+        cur = self.con.execute(f"select {', '.join(cols)} from pubs "
                                f" where mission='{mission}' "
                                f" and year >= '{year_begin}'"
                                f" and year <= '{year_end}'"
@@ -161,7 +161,7 @@ class SQLiteDB:
 
     def get_articles_by_mission_years_instrument(self, mission, year_begin, year_end, instrument):
         cols = ['year', 'COUNT(*)']
-        q = f"SELECT {", ".join(cols)} FROM pubs "
+        q = f"SELECT {', '.join(cols)} FROM pubs "
         q += f" WHERE mission = '{mission}' "
         q += f" AND year >= '{year_begin}' "
         q += f" AND year <= '{year_end}' "

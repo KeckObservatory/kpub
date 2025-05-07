@@ -1,7 +1,7 @@
 {
   #MONGODB connection string
   #NOTE: This is the connection string to your MongoDB instance.
-  "mongodb": {
+  "kpub": {
       server: "",
       user: "api_user",
       pwd: "",
@@ -20,7 +20,7 @@
   #NOTE: missions is the main grouping and is required. Sciences is optional.
   "missions": ['keck'],
   "sciences": [],
-
+  
   #Sets of queries to run.  
   #"query" string is exactly what is entered into the ADS web gui. See ADS website for query string nuances.
   #The suggested strategy is that the first group should be mostly good matches and needs less scrutiny, 

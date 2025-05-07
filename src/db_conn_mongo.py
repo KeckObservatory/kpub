@@ -72,13 +72,14 @@ class MongoDB:
             finally:
                 self.client = None
 
-    def add_row(self, article, month, mission, snippits, instruments, archive, affiliation):
+    def add_row(self, article, month, year, mission, snippits, instruments, archive, affiliation):
         """Insert a document into the MongoDB collection."""
         try:
             article['_id'] = article['bibcode'] # Use bibcode as the unique identifier
             article['last_modifier'] = 'kpub'
             article['date_modified'] = datetime.datetime.now()
-            article['month'] = month
+            article['month'] = int(month)
+            article['year'] = int(year)
             article['mission'] = mission
             article['snippits'] = snippits
             article['instruments'] = instruments.split('|')  # Convert to array
@@ -134,6 +135,26 @@ class MongoDB:
 
         projection = {'bibcode': 1, 'mission': 1, 'instruments': 1, 'archive': 1, 'affiliation': 1, 'date_modified': 1, 'last_modifier': 1, '_id': 0}
         rows = list(self.collection.find(query, projection).sort('bibcode', pymongo.ASCENDING))
+        return rows
+
+    def get_articles(self, begin_year=None, end_year=None, month=None, affiliation=None):
+        """Get articles from the collection."""
+        query = {}
+        if affiliation:
+            query['affiliation'] = affiliation 
+
+        if not begin_year:
+            begin_year = datetime.datetime.now().year
+
+        if not end_year:
+            query['year'] = begin_year 
+        else:
+            query['year'] = {'$gte': begin_year, '$lte': end_year} 
+
+        if month:
+            query['month'] = month
+
+        rows = list(self.collection.find(query).sort('date', pymongo.DESCENDING))
         return rows
 
     def select_for_spreadsheet(self):

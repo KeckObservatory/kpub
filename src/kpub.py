@@ -82,7 +82,7 @@ class PublicationDB(MongoDB):
     filename : str
         Path to the SQLite database file.
     """
-    def __init__(self, filename=DEFAULT_DB, config=None):
+    def __init__(self, config=None):
         self.config = config
         #super().__init__(filename)
         super().__init__(self.config, 'kpub')
@@ -101,11 +101,11 @@ class PublicationDB(MongoDB):
         log.debug('Ingesting {}'.format(article['bibcode']))
 
         # Store the extra metadata in the json string
-        month = article['pubdate'][0:7]
+        year, month = article['pubdate'][0:7].split('-')
         article['mission'] = mission
         article['instruments'] = instruments
         article['archive'] = archive
-        self.add_row(article, month, mission, snippits, instruments, archive, affiliation)
+        self.add_row(article, month, year, mission, snippits, instruments, archive, affiliation)
 
 
     @staticmethod
@@ -296,7 +296,7 @@ class PublicationDB(MongoDB):
                 group = group[:-3] + "-01"
             if group not in articles:
                 articles[group] = []
-            art = json.loads(row['metrics'])
+            art = row['metrics']
             # The markdown template depends on "property" being iterable
             if art["property"] is None:
                 art["property"] = []
@@ -435,7 +435,7 @@ class PublicationDB(MongoDB):
     def get_all(self, mission=None):
         """Returns a list of dictionaries, one entry per publication."""
         articles = self.query(mission=mission)
-        return [json.loads(art['metrics']) for art in articles]
+        return [art['metrics'] for art in articles]
 
     def get_most_cited(self, mission=None, top=10):
         """Returns the most-cited publications."""
@@ -450,7 +450,7 @@ class PublicationDB(MongoDB):
             else:
                 citations.append(js["citation_count"])
         idx_top = np.argsort(citations)[::-1][0:top]
-        return [json.loads(articles[idx]['metrics']) for idx in idx_top]
+        return [articles[idx]['metrics'] for idx in idx_top]
 
     def get_most_read(self, mission=None, top=10):
         """Returns the most-cited publications."""
@@ -462,7 +462,7 @@ class PublicationDB(MongoDB):
             bibcodes.append(article['bibcode'])
             citations.append(js["read_count"])
         idx_top = np.argsort(citations)[::-1][0:top]
-        return [json.loads(articles[idx]['metrics']) for idx in idx_top]
+        return [articles[idx]['metrics'] for idx in idx_top]
 
     def get_most_active_first_authors(self, min_papers=10):
         """Returns names and paper counts of the most active first authors."""
@@ -514,8 +514,8 @@ class PublicationDB(MongoDB):
 
         #for each article, get affiliations for first 3 authors for each article
         for article in articles:
-            year = int(article[0])
-            metrics = json.loads(article[1])
+            year = int(article['year'])
+            metrics = article['metrics']
             num_affs = len(metrics['aff'])
             affs = []
             for i in range(0,3):
@@ -929,7 +929,7 @@ def kpub_stats(args=None):
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
     title = config.get('prepend', '').capitalize()
 
-    pubdb = PublicationDB(args.f, config)
+    pubdb = PublicationDB(config)
 
     for bymonth in [True, False]:
         if bymonth:
@@ -984,7 +984,7 @@ def kpub_plot(args=None):
     args = parser.parse_args(args)
 
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
-    pubdb = PublicationDB(args.f, config)
+    pubdb = PublicationDB(config)
     pubdb.plot()
     pubdb.push_reminder()
 
@@ -1002,7 +1002,7 @@ def kpub_update(args=None):
 
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
 
-    db = PublicationDB(args.f, config)
+    db = PublicationDB(config)
     db.update(month=args.month)
 
 
@@ -1019,7 +1019,7 @@ def kpub_add(args=None, interactive=False):
 
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
 
-    db = PublicationDB(args.f, config)
+    db = PublicationDB(config)
     for bibcode in args.bibcode:
         db.add_by_bibcode(bibcode, interactive=interactive)
 
@@ -1037,7 +1037,7 @@ def kpub_delete(args=None):
 
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
 
-    db = PublicationDB(args.f, config)
+    db = PublicationDB(config)
     for bibcode in args.bibcode:
         db.delete_by_bibcode(bibcode)
 
@@ -1062,7 +1062,7 @@ def kpub_import(args=None):
 
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
 
-    db = PublicationDB(args.f, config)
+    db = PublicationDB(config)
     with open(args.jsonfile, 'r') as f:
         rows = json.load()
     for row in rows:
@@ -1083,26 +1083,24 @@ def kpub_import(args=None):
           HIGHLIGHTS['END'])
 
 
-def kpub_export(args=None):
-    """Export the bibcodes and classifications in CSV format."""
-    parser = argparse.ArgumentParser(description="Export the publication list in CSV format.")
-    parser.add_argument('-f', metavar='dbfile', type=str, default=DEFAULT_DB,
-        help="Location of the publication list db. Defaults to ~/.kpub.db.")
-    parser.add_argument("--archive", default=False, action="store_true",
-        help="Only export records marked as archived.")
-    parser.add_argument("--bibcodes", default=False, action="store_true",
-        help="Only export one bibcode column.")
-    args = parser.parse_args(args)
-
+def kpub_export(begin_year=None, end_year=None, month=None, affiliation=None, filename=None):
+    """Export the database as JSON format."""
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
-    db = PublicationDB(args.f, config)
-    rows = db.select_for_export(args.archive)
-    for row in rows:
-        if args.bibcodes: log.info(f'{row["bibcode"]}')
-        else:             log.info(f'{row}')
-    with open('kpub-publications.json', 'w') as f:
-        json.dump(rows, f, indent=4, sort_keys=True)
-    log.info('Exported {} rows to kpub-publications.json'.format(len(rows)))
+    db = PublicationDB(config)
+    articles = db.get_articles(begin_year=begin_year, end_year=end_year,
+                           month=month, affiliation=affiliation)
+    if not articles:
+        log.info('No rows found.')
+        return []
+    # Convert to a list of dictionaries
+    if not filename:
+        log.info('No filename specified.  Returning articles as list of dicts.')
+        return articles
+
+    with open(filename, 'w') as f:
+        json.dump(articles, f, indent=4)
+    log.info(f'Wrote {len(articles)} articles to {filename}')
+    
 
 
 def kpub_spreadsheet(args=None):
@@ -1127,7 +1125,7 @@ def kpub_spreadsheet(args=None):
     spreadsheet = []
     rows = db.select_for_spreadsheet()
     for row in rows:
-        metrics = json.loads(row['metrics'])
+        metrics = row['metrics']
         try:
             if 'REFEREED' in metrics['property']:
                 refereed = 'REFEREED'

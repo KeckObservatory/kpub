@@ -33,9 +33,9 @@ class MongoDB:
         """
 
         #get db connect data
-        server         = self.dbconfig["server"]
+        server         = self.dbconfig["server"] + ":" + str(self.dbconfig["port"])
         readonlyserver = self.dbconfig.get("readonlyserver", server)
-        cmd = ["timeout", "0.5", "ping", "-c", "1", server]
+        cmd = ["timeout", "0.5", "ping", "-c", "1", self.dbconfig["server"]]
         try:
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
             p.wait()

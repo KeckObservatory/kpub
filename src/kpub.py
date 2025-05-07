@@ -1062,25 +1062,41 @@ def kpub_import(args=None):
           HIGHLIGHTS['END'])
 
 
-def kpub_export(begin_year=None, end_year=None, month=None, affiliation=None, filename=None):
+def kpub_export(args=None):
+    parser = argparse.ArgumentParser(
+        description="Batch-export articles as JSON")
+    parser.add_argument('monthyear', type=str, nargs='?', default=datetime.datetime.now().strftime("%Y-%m"),
+                        metavar='YYYY-MM',
+                        help="Month Year to export. YYYY-MM or YYYY. e.g. '2015-06' or '2020'")
+    parser.add_argument('begin_year', type=int, nargs='?',
+                        help="Begining year to export. (if range is desired)")
+    parser.add_argument('affiliation', type=str, nargs='?',
+                        help="Affiliation to export.")
+    parser.add_argument('-filename', type=str, nargs='?',
+                        help="Filename to export to.")
+    args = parser.parse_args(args)
     """Export the database as JSON format."""
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
     db = PublicationDB(config)
-    articles = db.get_articles(begin_year=begin_year, end_year=end_year,
-                           month=month, affiliation=affiliation)
+    year, month = args.monthyear.split('-') if '-' in args.monthyear else (args.monthyear, None)
+    year, month = int(year), int(month) if month else None
+    articles = db.get_articles(begin_year=args.begin_year, end_year=year, month=month, affiliation=args.affiliation)
     if not articles:
         log.info('No rows found.')
         return []
     # Convert to a list of dictionaries
-    if not filename:
+    if not args.filename:
         log.info('No filename specified.  Returning articles as list of dicts.')
         return articles
 
-    with open(filename, 'w') as f:
-        json.dump(articles, f, indent=4)
-    log.info(f'Wrote {len(articles)} articles to {filename}')
+    with open(args.filename, 'w') as f:
+        json.dump(articles, f, indent=4, default=serialize_datetime)
+    log.info(f'Wrote {len(articles)} articles to {args.filename}')
     
-
+def serialize_datetime(obj):
+    if isinstance(obj, datetime.datetime):
+        return obj.isoformat()
+    raise TypeError("Type not serializable")
 
 def kpub_spreadsheet(args=None):
     """Export the publication database to an Excel spreadsheet."""

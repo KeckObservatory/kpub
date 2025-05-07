@@ -2,7 +2,7 @@
   #MONGODB connection string
   #NOTE: This is the connection string to your MongoDB instance.
   "mongodb": {
-      server: "vm-sumongo.keck.hawaii.edu:27017",
+      server: "",
       user: "api_user",
       pwd: "",
       database: "kpub",
@@ -65,6 +65,10 @@
     'LGS',
     'NGS',
   ],
+
+  #blacklist strings to look for to indicate article should be ignored.
+  #NOTE: You will not be prompted to confirm this.
+  "blacklist": ["TIMESCALES", "BAYESIAN", "ESING", "THESIS", "INGS"],
 
   #Archives strings to look for to indicate archiving was referenced.
   #NOTE: You will not be prompted to confirm this.

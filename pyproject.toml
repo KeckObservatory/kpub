@@ -14,7 +14,7 @@ dependencies = [
   "jinja2",
   "textract-py3",
   "matplotlib",
-  "psycopg2",
+  "pymongo",
   "bokeh",
   "openpyxl"
 ]

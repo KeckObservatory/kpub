@@ -45,10 +45,6 @@ MDDIR   = f"{PACKAGEDIR}/../data/output"
 #ADS API URL
 ADS_API = 'https://api.adsabs.harvard.edu/v1/search/query?'
 
-# Where is the default location of the SQLite database?
-#DEFAULT_DB = os.path.expanduser("~/.kpub.db")
-DEFAULT_DB = "data/kpub.db"
-
 # Which metadata fields do we want to retrieve from the ADS API?
 # (basically everything apart from 'body' to reduce data volume)
 FIELDS = ['date', 'pub', 'id', 'volume', 'links_data', 'citation', 'doi',
@@ -918,8 +914,6 @@ def kpub_stats(args=None):
 
     parser = argparse.ArgumentParser(
         description="Save the publication stats in markdown format.")
-    parser.add_argument('-f', metavar='dbfile', type=str, default=DEFAULT_DB,
-                        help="Location of the publication list db. Defaults to ~/.kpub.db.")
     parser.add_argument('--mission', dest="mission", type=str, default=None,
                         help="Only show a particular mission. Defaults to all.")
     parser.add_argument('-m', '--month', action='store_true',
@@ -978,9 +972,6 @@ def kpub_stats(args=None):
 def kpub_plot(args=None):
     """Creates beautiful plots of the database."""
     parser = argparse.ArgumentParser(description="Creates beautiful plots of the database.")
-    parser.add_argument('-f', metavar='dbfile',
-                        type=str, default=DEFAULT_DB,
-                        help="Location of the publication list db. Defaults to ~/.kpub.db.")
     args = parser.parse_args(args)
 
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
@@ -993,9 +984,6 @@ def kpub_update(args=None):
     """Interactively query ADS for new publications."""
     parser = argparse.ArgumentParser(
         description="Interactively query ADS for new publications.")
-    parser.add_argument('-f', metavar='dbfile',
-                        type=str, default=DEFAULT_DB,
-                        help="Location of the publication list db. Defaults to ~/.kpub.db.")
     parser.add_argument('month', nargs='?', default=None,
                         help='Month to query, YYYY-MM or YYYY. e.g. "2015-06" or "2020"')
     args = parser.parse_args(args)
@@ -1010,9 +998,6 @@ def kpub_add(args=None, interactive=False):
     """Add a publication with a known ADS bibcode."""
     parser = argparse.ArgumentParser(
         description="Add a paper to the publication list.")
-    parser.add_argument('-f', metavar='dbfile',
-                        type=str, default=DEFAULT_DB,
-                        help="Location of the publication list db. Defaults to ~/.kpub.db.")
     parser.add_argument('bibcode', nargs='+',
                         help='ADS bibcode that identifies the publication.')
     args = parser.parse_args(args)
@@ -1028,9 +1013,6 @@ def kpub_delete(args=None):
     """Deletes a publication using its ADS bibcode."""
     parser = argparse.ArgumentParser(
         description="Deletes a paper from the publication list.")
-    parser.add_argument('-f', metavar='dbfile',
-                        type=str, default=DEFAULT_DB,
-                        help="Location of the publication list db. Defaults to ~/.kpub.db.")
     parser.add_argument('bibcode', nargs='+',
                         help='ADS bibcode that identifies the publication.')
     args = parser.parse_args(args)
@@ -1053,9 +1035,6 @@ def kpub_import(args=None):
         description="Batch-import papers into the publication list "
                     "from a JSON file. The JSON file must have bibcode"
                     "For example: '2004ApJ...610.1199G,kepler,astrophysics'.")
-    parser.add_argument('-f', metavar='dbfile',
-                        type=str, default=DEFAULT_DB,
-                        help="Location of the publication list db. Defaults to ~/.kpub.db.")
     parser.add_argument('jsonfile',
                         help="Filename of the JSON file to ingest.")
     args = parser.parse_args(args)
@@ -1114,9 +1093,6 @@ def kpub_spreadsheet(args=None):
 
     parser = argparse.ArgumentParser(
         description="Export the publication list in XLS format.")
-    parser.add_argument('-f', metavar='dbfile',
-                        type=str, default=DEFAULT_DB,
-                        help="Location of the publication list db. Defaults to ~/.kpub.db.")
     args = parser.parse_args(args)
 
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)

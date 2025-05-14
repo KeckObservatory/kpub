@@ -92,7 +92,7 @@ export const ArticleTable = () => {
 
     return (
         <DataGrid
-            getRowId={(row) => row._id}
+            getRowId={(row: Article) => row._id}
             getRowHeight={() => 'auto'}
             slots={{
                 //@ts-ignore
@@ -105,14 +105,14 @@ export const ArticleTable = () => {
                 } as EditToolbarProps,
             }}
             showToolbar
-            onRowSelectionModelChange={(newRowSelectionModel) => {
+            onRowSelectionModelChange={(newRowSelectionModel: any) => {
                 console.log('newRowSelectionModel', newRowSelectionModel);
                 setRowSelectionModel(newRowSelectionModel);
             }}
             rowSelectionModel={rowSelectionModel}
             checkboxSelection={true}
             disableMultipleRowSelection={false}
-            rows={rows as any as Article[]}
+            rows={rows as unknown as Article[]}
             columns={cols}
         />
     );

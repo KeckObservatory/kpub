@@ -8,7 +8,7 @@ import subprocess
 log = logging.getLogger('kpub')
 from urllib.parse import quote_plus
 
-class MongoDB:
+class MongoDBConnector:
 
     def __init__(self, config, database, collection = None):
 

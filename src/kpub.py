@@ -21,8 +21,7 @@ from pprint import pprint
 import logging
 import jinja2
 import pdb
-from sql_lite_db import SQLiteDB
-from db_conn_mongo import MongoDB
+from db_conn_mongo import MongoDBConnector 
 #init logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('KPUB')
@@ -70,7 +69,7 @@ HIGHLIGHTS = {
 
 
 #class PublicationDB(SQLiteDB):
-class PublicationDB(MongoDB):
+class PublicationDB(MongoDBConnector):
     """Class wrapping the SQLite database containing the publications.
 
     Parameters

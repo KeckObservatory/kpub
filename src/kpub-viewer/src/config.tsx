@@ -1,7 +1,7 @@
 export const apiURL = 'https://vm-dev-appserver/api/kpub'
 export const keckURL = 'https://www.keckobservatory.org/'
 
-export const columns  = [
+export const adminColumns  = [
     { field: 'title', headerName: 'TITLE', width: 300 },
     { field: 'bibcode', headerName: 'BIBCODE', width: 150 },
     { field: 'year', headerName: 'YEAR', width: 70 },
@@ -12,6 +12,14 @@ export const columns  = [
     { field: 'affiliation', headerName: 'AFFILIATION'},
     { field: 'date_modified', headerName: 'DATE_MODIFIED'},
     { field: 'last_modifier', headerName: 'LAST_MODIFIER'}
+]
+
+export const columns = [
+    { field: 'title', headerName: 'TITLE', width: 300 },
+    { field: 'bibcode', headerName: 'BIBCODE', width: 150 },
+    { field: 'year', headerName: 'YEAR', width: 70 },
+    { field: 'month', headerName: 'MONTH', width: 70 },
+    { field: 'instruments', headerName: 'INST', width: 90 },
 ]
 export const rows = [
     {

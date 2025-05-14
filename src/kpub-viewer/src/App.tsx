@@ -1,11 +1,12 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { handleTheme } from './theme'
-import './App.css'
-import { BooleanParam, useQueryParam, withDefault } from 'use-query-params'
+import { StringParam, useQueryParam, withDefault } from 'use-query-params'
 // import { apiURL } from './config'
 import { CssBaseline, ThemeProvider } from '@mui/material'
 import { ArticleTable } from './article_table'
 import { TopBar } from './top_bar'
+import { rows } from './config'
+import { Box } from '@mui/material'
 
 export const apiURL = 'https://vm-dev-appserver/api/kpub'
 export const keckURL = 'https://www.keckobservatory.org/'
@@ -22,7 +23,7 @@ export interface Article {
   title: string[]
   year: number
   instruments: string[]
-  archive: '1' | '0' 
+  archive: '1' | '0'
   bibcode: string
   abstract: string
   publisher?: string
@@ -69,15 +70,46 @@ export interface Article {
 }
 
 interface State {
-  articles: Array<Article>
+  articles: Array<Article>,
 }
 
-const StateContext = createContext<State | null>(null)
+interface StateContextType {
+  articles: Array<Article>
+  setArticles: (articles: Array<Article>) => void
+  isAdmin: React.RefObject<boolean | null>
+}
+
+const StateContext = createContext<StateContextType | null>(null)
 export const useStateContext = () => useContext(StateContext)
 
 function App() {
 
-  const [darkMode, setDarkMode] = useQueryParam('darkMode', withDefault(BooleanParam, true))
+  // const [darkMode, setDarkMode] = useQueryParam('darkMode', withDefault(BooleanParam, true))
+  const [monthyear, _] = useQueryParam('monthyear', withDefault(StringParam, new Date().getFullYear().toString()))
+
+  // const articles = useMemo(() => {
+  //   const fetchData = async () => {
+  //     const response = await fetch(`${apiURL}/getData?monthyear=${monthyear}`)
+  //     if (!response.ok) {
+  //       console.warn('Network response was not ok')
+  //       //throw new Error('Network response was not ok')
+  //       return rows
+  //     }
+  //     else {
+  //       const resp = await response.json()
+  //       if (isAdmin.current === null) {
+  //         isAdmin.current = resp.isAdmin
+  //       }
+  //       console.log('Fetched articles:', resp.articles)
+  //       return resp.articles
+  //     }
+  //   }
+
+  //   const respArticles = fetchData()
+  //   return respArticles
+  //     }, [monthyear])
+
+  const darkMode = false
 
   const theme = useMemo(() => {
     const newTheme = handleTheme(darkMode)
@@ -86,42 +118,80 @@ function App() {
   }, [darkMode])
 
   const [state, setState] = useState<State>({} as State)
+  const isAdmin = useRef<boolean | null>(null);
 
-
+  const fetchData = async () => {
+    const response = await fetch(`${apiURL}/getData`)
+    if (!response.ok) {
+      console.warn('Network response was not ok')
+      throw new Error('Network response was not ok')
+    }
+    else {
+      const resp = await response.json()
+      if (isAdmin.current === null) {
+        isAdmin.current = resp.isAdmin
+      }
+      setState((prevState) => {
+        return {
+          ...prevState,
+          articles: resp.articles,
+        }
+      })
+      console.log('Fetched articles:', resp.articles)
+    }
+  }
 
   useEffect(() => {
+    fetchData().catch((error) => {
+      console.error('Error fetching data using default:', error)
+      isAdmin.current = true
+      setState((prevState) => {
+        return {
+          ...prevState,
+          articles: rows as unknown as Article[],
+        }
+      })
+    })
+  }, [monthyear])
 
-    const fetchData = async () => {
-      const response = await fetch(`${apiURL}/getData`)
-      if (!response.ok) {
-        console.warn('Network response was not ok')
-        //throw new Error('Network response was not ok')
-      }
-      else {
-        const articles = await response.json()
-        setState({
-          articles: articles,
-        })
-        console.log('Fetched articles:', articles)
-      }
+  // const handleThemeChange = () => {
+  //   setDarkMode(!darkMode)
+  // }
+
+  const stateContext = {
+    isAdmin: isAdmin,
+    articles: state.articles,
+    setArticles: (articles: Array<Article>) => {
+      setState((prevState) => ({
+        ...prevState,
+        articles: articles,
+      }))
     }
-    // fetchData().catch((error) => {
-    //   console.error('Error fetching data:', error)
-    // })
-  }, [])
-
-  const handleThemeChange = () => {
-    setDarkMode(!darkMode)
   }
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <StateContext.Provider value={state}>
-        <TopBar darkMode={darkMode} handleThemeChange={handleThemeChange} />
-        <ArticleTable />
-      </StateContext.Provider>
-    </ThemeProvider>
+    <div className="App" style={{
+      "maxWidth": "1280px",
+      "margin": "0 auto",
+      "padding": "2rem",
+      "textAlign": "center",
+    }}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <StateContext.Provider value={stateContext}>
+          {/* <TopBar darkMode={darkMode} handleThemeChange={handleThemeChange} /> */}
+          <TopBar />
+          <Box
+            sx={{
+              height: 1000,
+              width: '100%',
+            }}
+          >
+            <ArticleTable />
+          </Box>
+        </StateContext.Provider>
+      </ThemeProvider>
+    </div>
   )
 }
 

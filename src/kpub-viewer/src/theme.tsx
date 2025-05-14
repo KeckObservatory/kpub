@@ -1,5 +1,5 @@
-// @ts-nocheck
-import { createTheme } from '@mui/material/styles';
+import { createTheme, type PaletteMode, type Theme } from '@mui/material/styles';
+//import { type ThemeOptions } from '@mui/material/styles';
 
 // to use myTheme in an application, pass it to the theme grid option
 
@@ -37,45 +37,46 @@ import { createTheme } from '@mui/material/styles';
 //     oddRowBackgroundColor: "#140F13"
 //   });
 
-
-
 export const handleTheme = (darkState: boolean | null | undefined): Theme => {
-  const palletType = darkState ? "dark" : "light"
+  const palletType = darkState ? "dark" : "light" as PaletteMode
   const themeOptions = {
-    mode: palletType,
-    primary: {
-      main: '#BD7799',
-    },
-    secondary: {
-      main: '#140F13',
-    },
-    colorSchemes: {
-      light: {
-        palette: {
-          DataGrid: {
-            bg: '#fffffff',
-            pinnedBg: '#337ab7',
-            headerBg: '#eaeff5',
-          },
-        },
+    palette: {
+      mode: palletType,
+      primary: {
+        main: '#bd7799',
       },
-      dark: {
-        palette: {
-          primary: {
-            main: '#BD7799',
-          },
-          secondary: {
-            main: '#140F13',
-          },
-          DataGrid: {
-            bg: '#1D0F28',
-            pinnedBg: '#2E7893',
-            headerBg: '#fafafa',
+      secondary: {
+        main: '#9c27b0',
+      },
+      background: {
+        default: '#1d0f28',
+      },
+      // DataGrid: {
+      //   bg: palletType === 'light' ? '#f8fafc' : '#334155',
+      //   pinnedBg: palletType === 'light' ? '#f1f5f9' : '#293548',
+      //   headerBg: palletType === 'light' ? '#eaeff5' : '#1e293b',
+      // },
+      colorSchemes: {
+        light: {
+          palette: {
+            DataGrid: {
+              bg: '#f8fafc',
+              pinnedBg: '#f1f5f9',
+              headerBg: '#eaeff5',
+            },
           },
         },
+        dark: {
+          palette: {
+            DataGrid: {
+              bg: '#334155',
+              pinnedBg: '#293548',
+              headerBg: '#1e293b',
+            },
+          },
+        }
       }
-    }
-  }
+    }}
   const theme = createTheme(themeOptions)
   return theme
-}
+  }

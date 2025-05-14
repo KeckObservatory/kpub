@@ -1,5 +1,5 @@
 import AppBar from '@mui/material/AppBar';
-import Switch from "@mui/material/Switch"
+// import Switch from "@mui/material/Switch"
 import Tooltip from '@mui/material/Tooltip';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography'
@@ -8,12 +8,12 @@ import IconButton from '@mui/material/IconButton';
 import React from 'react';
 import { keckURL } from './config';
 
-interface Props {
-  darkMode: boolean,
-  handleThemeChange: () => void
-}
+// interface Props {
+//   darkMode: boolean,
+//   handleThemeChange: () => void
+// }
 
-export function TopBar(props: Props) {
+export function TopBar() {
 
   React.useEffect(() => {
   }, [])
@@ -54,11 +54,11 @@ export function TopBar(props: Props) {
             <DoorFrontIcon id="observer-portal-icon" />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Toggle on for dark mode">
+        {/* <Tooltip title="Toggle on for dark mode">
           <Switch
             checked={props.darkMode}
             onChange={props.handleThemeChange} />
-        </Tooltip>
+        </Tooltip> */}
       </Toolbar>
     </AppBar>
   )

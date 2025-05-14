@@ -21,7 +21,7 @@ from pprint import pprint
 import logging
 import jinja2
 import pdb
-from db_conn_mongo import MongoDBConnector 
+from db_mongo_conn import MongoDBConnector 
 #init logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('KPUB')

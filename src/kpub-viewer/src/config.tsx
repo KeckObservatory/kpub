@@ -1,26 +1,56 @@
 export const apiURL = 'https://vm-dev-appserver/api/kpub'
 export const keckURL = 'https://www.keckobservatory.org/'
+export const HIGHTLIGHTED_WORDS = ['Keck',
+    'HIRES',
+    'LRIS',
+    'KPF',
+    'NIRC2',
+    'NIRSPEC',
+    'KCWI',
+    'KPIC', 'OSIRIS', 'AO',
+    'Koa',
+    'KOA',
+    'Keck Observatory Archive',
+    'Keck Observatory',
+    'HIRES/Keck']
 
-export const adminColumns  = [
-    { field: 'title', headerName: 'TITLE', width: 300 },
-    { field: 'bibcode', headerName: 'BIBCODE', width: 150 },
-    { field: 'year', headerName: 'YEAR', width: 70 },
-    { field: 'month', headerName: 'MONTH', width: 70 },
-    { field: 'id', headerName: 'ID', width: 90 },
-    { field: 'instruments', headerName: 'INST', width: 90 },
-    { field: 'archive', headerName: 'KOA?', width: 90 },
-    { field: 'affiliation', headerName: 'AFFILIATION'},
-    { field: 'date_modified', headerName: 'DATE_MODIFIED'},
-    { field: 'last_modifier', headerName: 'LAST_MODIFIER'}
+export const INSTRUMENTS = [
+    "DEIMOS",
+    "ESI",
+    "KPIC",
+    "KPF",
+    "KECK/SCALES",
+    "HISPEC",
+    "HIRES",
+    "KCWI",
+    "LRIS",
+    "MOSFIRE",
+    "NIRC2",
+    "NIRES",
+    "NIRSPEC",
+    "OSIRIS",
+    "AO",
+    "LGS",
+    "NGS",
 ]
 
 export const columns = [
     { field: 'title', headerName: 'TITLE', width: 300 },
-    { field: 'bibcode', headerName: 'BIBCODE', width: 150 },
+    { field: 'bibcode', headerName: 'BIBCODE', width: 180 },
     { field: 'year', headerName: 'YEAR', width: 70 },
     { field: 'month', headerName: 'MONTH', width: 70 },
     { field: 'instruments', headerName: 'INST', width: 90 },
 ]
+
+export const adminColumns = [
+    ...columns,
+    { field: 'id', headerName: 'ID', width: 90 },
+    { field: 'archive', headerName: 'KOA?', width: 70 },
+    { field: 'affiliation', headerName: 'AFFILIATION', width: 150 },
+    { field: 'date_modified', headerName: 'DATE_MODIFIED', width: 150 },
+    { field: 'last_modifier', headerName: 'LAST_MODIFIER', width: 150 }
+]
+
 export const rows = [
     {
         "_id": "2025MNRAS.540L..48U",

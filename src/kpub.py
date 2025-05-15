@@ -251,7 +251,13 @@ class PublicationDB(MongoDBConnector):
         val = "1" if len(counts) > 0 else "0"
         return val
 
-
+    def set_affiliation(self, articles, affiliation):
+        for article in articles:
+            # Get the bibcode
+            article['date_modified'] = datetime.datetime.now()
+            article['affiliation'] = affiliation
+            # Save the changes to the database
+            self.update_row_affiliation(article)
 
 
     def add_by_bibcode(self, bibcode, interactive=False):
@@ -994,7 +1000,6 @@ def kpub_update(args=None):
     success = db.update(month=args.month)
     return success
 
-
 def kpub_add(args=None, interactive=False):
     """Add a publication with a known ADS bibcode."""
     parser = argparse.ArgumentParser(
@@ -1062,6 +1067,13 @@ def kpub_import(args=None):
           "\nREMINDER: Do a `kpub push` to update the data files in github!" +
           HIGHLIGHTS['END'])
 
+def kpub_set_affiliation(articles, affiliation):
+
+    config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
+    db = PublicationDB(config)
+    db.set_affiliation(articles, affiliation)
+    log.info('Set affiliation for {} articles to {}'.format(len(articles), affiliation))
+    
 
 def kpub_export(args=None):
     parser = argparse.ArgumentParser(

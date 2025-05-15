@@ -13,9 +13,10 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import { useStateContext } from './App';
+import { INSTRUMENTS } from './config';
+import Highlighter from 'react-highlight-words';
 
 interface ArticleStepperProps extends BulkAssignerProps { }
-
 
 export const ArticleStepper = (props: ArticleStepperProps) => {
     const { selectedArticles, isOpen, handleClose } = props;
@@ -84,10 +85,15 @@ export const ArticleStepper = (props: ArticleStepperProps) => {
                                         <Typography key={idx} variant="body2">
                                             {key}: Mentioned {value.count} times
                                         </Typography>
-                                        {value.snippets.map((snippet, jdx) => {
-                                            return (<Typography key={jdx} variant="body2">
-                                                {jdx + 1}: {snippet}
-                                            </Typography>)
+                                        {value.snippets.map((snippet) => {
+                                            return (
+                                                <Highlighter
+                                                    highlightClassName="highlighted"
+                                                    searchWords={INSTRUMENTS}
+                                                    autoEscape={true}
+                                                    textToHighlight={snippet}
+                                                    />
+                                            )
                                         })}
                                     </Stack>
                                 )

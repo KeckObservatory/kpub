@@ -87,28 +87,6 @@ function App() {
   // const [darkMode, setDarkMode] = useQueryParam('darkMode', withDefault(BooleanParam, true))
   const [monthyear, _] = useQueryParam('monthyear', withDefault(StringParam, new Date().getFullYear().toString()))
 
-  // const articles = useMemo(() => {
-  //   const fetchData = async () => {
-  //     const response = await fetch(`${apiURL}/getData?monthyear=${monthyear}`)
-  //     if (!response.ok) {
-  //       console.warn('Network response was not ok')
-  //       //throw new Error('Network response was not ok')
-  //       return rows
-  //     }
-  //     else {
-  //       const resp = await response.json()
-  //       if (isAdmin.current === null) {
-  //         isAdmin.current = resp.isAdmin
-  //       }
-  //       console.log('Fetched articles:', resp.articles)
-  //       return resp.articles
-  //     }
-  //   }
-
-  //   const respArticles = fetchData()
-  //   return respArticles
-  //     }, [monthyear])
-
   const darkMode = false
 
   const theme = useMemo(() => {
@@ -121,7 +99,7 @@ function App() {
   const isAdmin = useRef<boolean | null>(null);
 
   const fetchData = async () => {
-    const response = await fetch(`${apiURL}/getData`)
+    const response = await fetch(`${apiURL}/get_table`)
     if (!response.ok) {
       console.warn('Network response was not ok')
       throw new Error('Network response was not ok')
@@ -171,7 +149,7 @@ function App() {
 
   return (
     <div className="App" style={{
-      "maxWidth": "1280px",
+      "maxWidth": "1430px",
       "margin": "0 auto",
       "padding": "2rem",
       "textAlign": "center",

@@ -90,6 +90,18 @@ class MongoDBConnector:
         except pymongo.errors.DuplicateKeyError:
             log.warning(f"{article['bibcode']} was already ingested.")
 
+    def update_row_affiliation(self, article):
+        """Update a document in the MongoDB collection."""
+        try:
+            self.collection.update_one({'_id': article['_id']}, {'$set': {
+                'last_modifier': article['last_modifier'],
+                'date_modified': article['date_modified'],
+                'affiliation': article['affiliation']
+            }})
+            log.info(f"Updated {article['bibcode']}")
+        except Exception as e:
+            log.error(f"Error updating {article['bibcode']}: {e}")
+
     def delete_by_bibcode(self, bibcode):
         """Delete a document by bibcode."""
         result = self.collection.delete_one({'bibcode': bibcode})

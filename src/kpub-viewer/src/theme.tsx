@@ -51,30 +51,10 @@ export const handleTheme = (darkState: boolean | null | undefined): Theme => {
       background: {
         default: '#1d0f28',
       },
-      // DataGrid: {
-      //   bg: palletType === 'light' ? '#f8fafc' : '#334155',
-      //   pinnedBg: palletType === 'light' ? '#f1f5f9' : '#293548',
-      //   headerBg: palletType === 'light' ? '#eaeff5' : '#1e293b',
-      // },
-      colorSchemes: {
-        light: {
-          palette: {
-            DataGrid: {
-              bg: '#f8fafc',
-              pinnedBg: '#f1f5f9',
-              headerBg: '#eaeff5',
-            },
-          },
-        },
-        dark: {
-          palette: {
-            DataGrid: {
-              bg: '#334155',
-              pinnedBg: '#293548',
-              headerBg: '#1e293b',
-            },
-          },
-        }
+      DataGrid: {
+        bg: palletType === 'light' ? '#f8fafc' : '#334155',
+        pinnedBg: palletType === 'light' ? '#f1f5f9' : '#293548',
+        headerBg: palletType === 'light' ? '#eaeff5' : '#1e293b',
       }
     }}
   const theme = createTheme(themeOptions)

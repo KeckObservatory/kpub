@@ -13,7 +13,7 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import { useStateContext } from './App';
-import { INSTRUMENTS } from './config';
+import { apiURL, INSTRUMENTS } from './config';
 import Highlighter from 'react-highlight-words';
 
 interface ArticleStepperProps extends BulkAssignerProps { }
@@ -30,7 +30,7 @@ export const ArticleStepper = (props: ArticleStepperProps) => {
         console.log('activeStep:', activeStep)
         console.log('Article to be updated:', selectedArticles[activeStep]);
 
-        const resp = await fetch(`https://vm-dev-appserver/api/kpub/update_affiliation}`, {
+        const resp = await fetch(`${apiURL}/update_affiliation}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

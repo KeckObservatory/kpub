@@ -8,6 +8,7 @@ import DialogActions from '@mui/material/DialogActions';
 import FormControl from '@mui/material/FormControl';
 import FormLabel from '@mui/material/FormLabel';
 import RadioGroup from '@mui/material/RadioGroup';
+import { apiURL } from './config';
 import Radio from '@mui/material/Radio';
 import FormControlLabel from '@mui/material/FormControlLabel';
 
@@ -54,7 +55,7 @@ export const BulkAssigner = (props: BulkAssignerProps) => {
         // Perform the save operation here
         console.log('Selected Option:', selectedOption);
 
-        const resp = await fetch(`https://vm-dev-appserver/api/kpub/update_affiliation}`, {
+        const resp = await fetch(`${apiURL}/update_affiliation}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

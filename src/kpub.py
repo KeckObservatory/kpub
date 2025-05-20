@@ -251,11 +251,12 @@ class PublicationDB(MongoDBConnector):
         val = "1" if len(counts) > 0 else "0"
         return val
 
-    def set_affiliation(self, articles, affiliation):
+    def set_affiliation(self, articles, affiliation, modifier='kpub'):
         for article in articles:
             # Get the bibcode
             article['date_modified'] = datetime.datetime.now()
             article['affiliation'] = affiliation
+            article['last_modifier'] = modifier
             # Save the changes to the database
             self.update_row_affiliation(article)
 
@@ -327,6 +328,29 @@ class PublicationDB(MongoDBConnector):
         f = open(output_fn, 'w')
         f.write(markdown)
         f.close()
+
+    def get_plot_data(self, plotname, **kwargs):
+        """Returns the data for a given plot.
+
+        Parameters
+        ----------
+        plotname : str
+            Name of the plot to get data for.
+        """
+        instruments = self.config.get('instruments', [])
+        year_begin = 2009
+        if plotname == 'plot_by_year':
+            extrapolate = kwargs.get('extrapolate', True)
+            plotdata = plot.get_plot_by_year_data(self, year_begin=year_begin, extrapolate=extrapolate)
+        elif plotname == 'plot_author_count':
+            plotdata = plot.get_plot_author_count_data(self, year_begin=year_begin)
+        elif plotname == 'plot_by_instrument':
+            instruments = kwargs.get('instruments', instruments)
+            plotdata, _ = plot.get_plot_instruments_data(self, instruments, year_begin=year_begin, instruments=instruments)
+        else:
+            raise ValueError(f"Unknown plot name: {plotname}") 
+
+        return plotdata 
 
     def plot(self):
         """Saves beautiful plot of the database."""

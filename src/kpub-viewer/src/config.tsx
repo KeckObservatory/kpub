@@ -1,4 +1,4 @@
-export const apiURL = 'https://vm-dev-appserver/api/kpub'
+export const apiURL = '/api/kpub'
 export const keckURL = 'https://www.keckobservatory.org/'
 export const HIGHTLIGHTED_WORDS = ['Keck',
     'HIRES',

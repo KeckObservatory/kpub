@@ -1,15 +1,14 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { handleTheme } from './theme'
 import { StringParam, useQueryParam, withDefault } from 'use-query-params'
-// import { apiURL } from './config'
+import { apiURL } from './config'
 import { CssBaseline, ThemeProvider } from '@mui/material'
 import { ArticleTable } from './article_table'
 import { TopBar } from './top_bar'
 import { rows } from './config'
 import { Box } from '@mui/material'
 
-export const apiURL = 'https://vm-dev-appserver/api/kpub'
-export const keckURL = 'https://www.keckobservatory.org/'
+//export const apiURL = 'http://vm-dev-appserver/api/kpub'
 
 export interface Snippits {
   [key: string]: {

@@ -40,16 +40,24 @@ import { createTheme, type PaletteMode, type Theme } from '@mui/material/styles'
 export const handleTheme = (darkState: boolean | null | undefined): Theme => {
   const palletType = darkState ? "dark" : "light" as PaletteMode
   const themeOptions = {
+    typography: {
+      fontFamily: 'Droid Serif',
+    },
     palette: {
       mode: palletType,
       primary: {
         main: '#bd7799',
+        //contrastText: '#e9ca90',
       },
       secondary: {
         main: '#9c27b0',
       },
       background: {
         default: '#1d0f28',
+      },
+      text: {
+        //primary: palletType === 'light' ? '#000000' : '#e9ca90',
+        primary: '#000000' ,
       },
       DataGrid: {
         bg: palletType === 'light' ? '#f8fafc' : '#334155',

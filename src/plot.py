@@ -4,6 +4,7 @@ import numpy as np
 from pprint import pprint
 import sys
 import logging
+import pdb
 
 from matplotlib import pyplot as pl
 import matplotlib.patheffects as path_effects
@@ -56,7 +57,7 @@ mpl.rcParams["grid.linestyle"] = "-"
 mpl.rcParams["grid.linewidth"] = 1
 
 def get_plot_by_year_data( db,
-                 first_year=2009,
+                 year_begin=2009,
                  extrapolate=True,
                  mission='keck',
                  colors=["#3498db", "#27ae60", "#95a5a6"]):
@@ -67,7 +68,7 @@ def get_plot_by_year_data( db,
     db : `PublicationDB` object
         Data to plot.
 
-    first_year : int
+    year_begin : int
         What year should the plot start?
 
     extrapolate : boolean
@@ -82,7 +83,7 @@ def get_plot_by_year_data( db,
     # Obtain the dictionary which provides the annual counts
     current_year = datetime.datetime.now().year
     counts = db.get_annual_publication_count(
-    year_begin=first_year, year_end=current_year)
+    year_begin=year_begin, year_end=current_year)
 
     # Also plot the extrapolated prediction for the current year
     current_total = None
@@ -96,7 +97,7 @@ def get_plot_by_year_data( db,
         'current_year': current_year,
         'current_total': current_total,
         'expected': expected,
-        'first_year': first_year,
+        'year_begin': year_begin,
         'counts': counts,
         'colors': colors
     }
@@ -105,7 +106,7 @@ def get_plot_by_year_data( db,
 
 def plot_by_year(db,
                  output_fn='kpub-publication-rate.pdf',
-                 first_year=2009,
+                 year_begin=2009,
                  barwidth=0.75,
                  dpi=200,
                  extrapolate=True,
@@ -121,7 +122,7 @@ def plot_by_year(db,
     output_fn : str
         Output filename of the plot.
 
-    first_year : int
+    year_begin : int
         What year should the plot start?
 
     barwidth : float
@@ -140,13 +141,13 @@ def plot_by_year(db,
         Define the facecolor for plots
     """
     # Obtain the dictionary which provides the annual counts
-    plotdata = get_plot_by_year_data(db, first_year=first_year, 
+    plotdata = get_plot_by_year_data(db, year_begin=year_begin, 
                                       extrapolate=extrapolate,
-                                      mission=missions[0],
+                                      mission='keck',
                                       colors=colors)
     current_year = plotdata['current_year']
     expected = plotdata['expected']
-    first_year = plotdata['first_year']
+    year_begin = plotdata['year_begin']
     counts = plotdata['counts']
     colors = plotdata['colors']
     current_total = plotdata['current_total']
@@ -174,8 +175,8 @@ def plot_by_year(db,
     # Aesthetics
     pl.ylabel("Publications per year")
     ax.get_xaxis().get_major_formatter().set_useOffset(False)
-    pl.xticks(range(first_year - 1, current_year + 1))
-    pl.xlim([first_year - 0.75*barwidth, current_year + 0.75*barwidth])
+    pl.xticks(range(year_begin - 1, current_year + 1))
+    pl.xlim([year_begin - 0.75*barwidth, current_year + 0.75*barwidth])
     pl.legend(bbox_to_anchor=(0.1, 1., 1., 0.),
               loc=3,
               ncol=3,
@@ -253,7 +254,7 @@ def plot_science_piechart(db, output_fn="kpub-piechart.pdf", dpi=200, sciences=[
     pl.savefig(output_fn, dpi=dpi)
     pl.close()
 
-def get_plot_author_count_data(db, first_year):
+def get_plot_author_count_data(db, year_begin):
     """Gets data for a line chart showing the number of authors over time.
 
     Parameters
@@ -261,7 +262,7 @@ def get_plot_author_count_data(db, first_year):
     db : `PublicationDB` object
         Data to plot.
 
-    first_year : int
+    year_begin : int
         What year should the plot start?
     """
     # Obtain the dictionary which provides the annual counts
@@ -272,7 +273,7 @@ def get_plot_author_count_data(db, first_year):
     paper_counts = []
     author_counts = []
     first_author_counts = []
-    for year in range(first_year - 1, current_year + 1):
+    for year in range(year_begin - 1, current_year + 1):
         cumulative_years.append(year)
         metrics = db.get_metrics(cumulative_years)
         paper_counts.append(metrics['publication_count'])
@@ -287,7 +288,7 @@ def get_plot_author_count_data(db, first_year):
 
 def plot_author_count(db,
                       output_fn='kpub-author-count.pdf',
-                      first_year=2008,
+                      year_begin=2008,
                       dpi=200,
                       colors=["#3498db", "#27ae60", "#95a5a6"]):
     """Plots a line chart showing the number of authors over time.
@@ -300,7 +301,7 @@ def plot_author_count(db,
     output_fn : str
         Output filename of the plot.
 
-    first_year : int
+    year_begin : int
         What year should the plot start?
 
     dpi : float
@@ -310,7 +311,7 @@ def plot_author_count(db,
         Define the facecolors
     """
     current_year = datetime.datetime.now().year
-    plotdata = get_plot_author_count_data(db, first_year=first_year)
+    plotdata = get_plot_author_count_data(db, year_begin=year_begin)
     cumulative_years = plotdata['cumulative_years']
     paper_counts = plotdata['paper_counts']
     author_counts = plotdata['author_counts']
@@ -331,8 +332,8 @@ def plot_author_count(db,
     # pl.title("Scientific output over time")
     pl.ylabel("Cumulative count")
     ax.get_xaxis().get_major_formatter().set_useOffset(False)
-    pl.xticks(range(first_year - 1, current_year + 1))
-    pl.xlim([first_year + 0.5, current_year + 0.5])
+    pl.xticks(range(year_begin - 1, current_year + 1))
+    pl.xlim([year_begin + 0.5, current_year + 0.5])
     pl.ylim([0, 1.05*np.max(paper_counts)])
     pl.legend(bbox_to_anchor=(0.03, 0.95, 0.95, 0.),
               loc="upper left",
@@ -357,7 +358,7 @@ def plot_author_count(db,
 
 
 def get_plot_instruments_data(db,
-                         year_begin=2000,
+                         year_begin=2009,
                          mission='keck',
                          instruments=[]):
     """Gets data for a multiline graph showing the number of publications per instrument per year.
@@ -367,7 +368,7 @@ def get_plot_instruments_data(db,
     db : `PublicationDB` object
         Data to plot.
 
-    first_year : int
+    year_begin : int
         What year should the plot start?
 
     instruments : array(str)
@@ -415,7 +416,7 @@ def plot_instruments(db,
     output_fn : str
         Output filename of the plot.
 
-    first_year : int
+    year_begin : int
         What year should the plot start?
 
     instruments : array(str)
@@ -424,14 +425,15 @@ def plot_instruments(db,
     plotdata, years = get_plot_instruments_data(db, year_begin=year_begin,
                                            mission='keck',
                                            instruments=instruments)
-    source = ColumnDataSource(plotdata)
+    src = ColumnDataSource(plotdata)
+    pdb.set_trace()
     p = figure(width=1000, height=800, x_range=years)
     p.multi_line(xs='years',
                  ys='values',
                  color='color',
                  legend='columns',
                  line_width=3,
-                 source=source)
+                 source=src)
     p.add_layout(Title(text="by instrument",
                        text_font_style="italic"), 'above')
     p.add_layout(Title(

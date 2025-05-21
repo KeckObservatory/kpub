@@ -298,11 +298,10 @@ class PublicationDB(MongoDBConnector):
                 group = group[:-3] + "-01"
             if group not in articles:
                 articles[group] = []
-            art = row['metrics']
             # The markdown template depends on "property" being iterable
-            if art["property"] is None:
-                art["property"] = []
-            articles[group].append(art)
+            if row["property"] is None:
+                row["property"] = []
+            articles[group].append(row)
 
         templatedir = os.path.join(PACKAGEDIR, 'templates')
         env = jinja2.Environment(loader=jinja2.FileSystemLoader(templatedir))
@@ -337,45 +336,52 @@ class PublicationDB(MongoDBConnector):
         plotname : str
             Name of the plot to get data for.
         """
-        instruments = self.config.get('instruments', [])
-        year_begin = 2009
+        year_begin = kwargs.get('year_begin', 2009)
+        if year_begin is None:
+            year_begin = 2009
+
         if plotname == 'plot_by_year':
             extrapolate = kwargs.get('extrapolate', True)
+            if extrapolate is None:
+                extrapolate = True
             plotdata = plot.get_plot_by_year_data(self, year_begin=year_begin, extrapolate=extrapolate)
         elif plotname == 'plot_author_count':
             plotdata = plot.get_plot_author_count_data(self, year_begin=year_begin)
         elif plotname == 'plot_by_instrument':
-            instruments = kwargs.get('instruments', instruments)
-            plotdata, _ = plot.get_plot_instruments_data(self, instruments, year_begin=year_begin, instruments=instruments)
+            allInstruments = '|'.join(self.config.get('instruments', []))
+            instruments = kwargs.get('instruments', allInstruments)
+            if instruments is None:
+                instruments = allInstruments
+            instruments = instruments.split('|')
+            plotdata, _ = plot.get_plot_instruments_data(self, year_begin=year_begin, instruments=instruments)
         else:
             raise ValueError(f"Unknown plot name: {plotname}") 
 
+        print(f"Plot data for {plotname}: {plotdata}")
         return plotdata 
 
-    def plot(self):
+    def get_plot(self):
         """Saves beautiful plot of the database."""
         missions = self.config.get('missions', [])
         plots_cfg = self.config.get('plots', [])
         for ext in ['pdf', 'png']:
             plot.plot_by_year(self, f"{PLOTDIR}/kpub-publication-rate.{ext}", 
-                              first_year=plots_cfg['year_begin'], missions=missions)
+                              year_begin=plots_cfg['year_begin'])
             plot.plot_by_year(self, f"{PLOTDIR}/kpub-publication-rate-no-extrapolation.{ext}", 
-                              first_year=plots_cfg['year_begin'], missions=missions, extrapolate=False)
+                              year_begin=plots_cfg['year_begin'], extrapolate=False)
             for mission in missions:
                 plot.plot_by_year(self, f"{PLOTDIR}/kpub-publication-rate-{mission}.{ext}", 
-                                 first_year=plots_cfg['year_begin'], missions=[mission])
-            plot.plot_author_count(self, f"{PLOTDIR}/kpub-author-count.{ext}", first_year=plots_cfg['year_begin'])
+                                 year_begin=plots_cfg['year_begin'])
+            plot.plot_author_count(self, f"{PLOTDIR}/kpub-author-count.{ext}", year_begin=plots_cfg['year_begin'])
 
         #bokeh plots
         if plots_cfg['instruments']:
             plot.plot_instruments(self, f"{PLOTDIR}/kpub-publications-by-instrument", 
                                   year_begin=plots_cfg['year_begin'],
-                                  missions=missions, 
                                   instruments=plots_cfg['instruments'])
         if self.config['aff_defs']:
             plot.plot_affiliations(self, f"{PLOTDIR}/kpub-affiliations", 
-                                  year_begin=plots_cfg['year_begin'],
-                                  missions=missions)
+                                  year_begin=plots_cfg['year_begin'])
 
 
     def get_metrics(self, year=None):
@@ -410,39 +416,38 @@ class PublicationDB(MongoDBConnector):
             authors[mission] = []
             first_authors[mission] = []
 
-        for article in self.query(year=year):
-            api_response = article['metrics']
-            js = json.loads(api_response)
+        articles = self.query(year=year)
+        for article in articles:
 
             #general count
             metrics["publication_count"] += 1
-            metrics[f"{js['mission']}_count"] += 1
+            metrics[f"{article['mission']}_count"] += 1
 
             #phd counts
-            if "PhDT" in js['bibcode']:
+            if "PhDT" in article['bibcode']:
                 metrics["phd_count"] += 1
-                metrics[f"{js['mission']}_phd_count"] += 1
+                metrics[f"{article['mission']}_phd_count"] += 1
 
             #author counts
-            authors['all'].extend(js['author_norm'])
-            first_authors['all'].append(js['first_author_norm'])
-            authors[mission].extend(js['author_norm'])
-            first_authors[mission].append(js['first_author_norm'])
+            authors['all'].extend(article['author_norm'])
+            first_authors['all'].append(article['first_author_norm'])
+            authors[mission].extend(article['author_norm'])
+            first_authors[mission].append(article['first_author_norm'])
 
             #refereed counts
             try:
-                if "REFEREED" in js['property']:
+                if "REFEREED" in article['property']:
                     metrics["refereed_count"] += 1
-                    metrics[f"{js['mission']}_refereed_count"] += 1
+                    metrics[f"{article['mission']}_refereed_count"] += 1
             except TypeError:  # proprety is None
                 pass
 
             #citation counts
             try:
-                metrics["citation_count"] += js['citation_count']
-                metrics[f"{js['mission']}_citation_count"] += js['citation_count']
+                metrics["citation_count"] += article['citation_count']
+                metrics[f"{article['mission']}_citation_count"] += article['citation_count']
             except (KeyError, TypeError):
-                log.warning("{}: no citation_count".format(js["bibcode"]))
+                log.warning("{}: no citation_count".format(article["bibcode"]))
 
         metrics["author_count"] = np.unique(authors['all']).size
         metrics["first_author_count"] = np.unique(first_authors['all']).size
@@ -459,44 +464,37 @@ class PublicationDB(MongoDBConnector):
 
     def get_all(self, mission=None):
         """Returns a list of dictionaries, one entry per publication."""
-        articles = self.query(mission=mission)
-        return [art['metrics'] for art in articles]
+        return self.query(mission=mission)
 
     def get_most_cited(self, mission=None, top=10):
         """Returns the most-cited publications."""
         bibcodes, citations = [], []
         articles = self.query(mission=mission)
         for article in articles:
-            api_response = article['metrics']
-            js = json.loads(api_response)
             bibcodes.append(article['bibcode'])
-            if js["citation_count"] is None:
+            if article["citation_count"] is None:
                 citations.append(0)
             else:
-                citations.append(js["citation_count"])
+                citations.append(article["citation_count"])
         idx_top = np.argsort(citations)[::-1][0:top]
-        return [articles[idx]['metrics'] for idx in idx_top]
+        return [articles[idx] for idx in idx_top]
 
     def get_most_read(self, mission=None, top=10):
         """Returns the most-cited publications."""
         bibcodes, citations = [], []
         articles = self.query(mission=mission)
         for article in articles:
-            api_response = article['metrics']
-            js = json.loads(api_response)
             bibcodes.append(article['bibcode'])
-            citations.append(js["read_count"])
+            citations.append(article["read_count"])
         idx_top = np.argsort(citations)[::-1][0:top]
-        return [articles[idx]['metrics'] for idx in idx_top]
+        return [articles[idx] for idx in idx_top]
 
     def get_most_active_first_authors(self, min_papers=10):
         """Returns names and paper counts of the most active first authors."""
         articles = self.query()
         authors = {}
         for article in articles:
-            api_response = article['metrics']
-            js = json.loads(api_response)
-            first_author = js["first_author_norm"]
+            first_author = article["first_author_norm"]
             try:
                 authors[first_author] += 1
             except KeyError:
@@ -511,9 +509,7 @@ class PublicationDB(MongoDBConnector):
         articles = self.query()
         authors = {}
         for article in articles:
-            api_response = article['metrics']
-            js = json.loads(api_response)
-            for auth in js["author_norm"]:
+            for auth in article["author_norm"]:
                 try:
                     authors[auth] += 1
                 except KeyError:
@@ -540,12 +536,11 @@ class PublicationDB(MongoDBConnector):
         #for each article, get affiliations for first 3 authors for each article
         for article in articles:
             year = int(article['year'])
-            metrics = article['metrics']
-            num_affs = len(metrics['aff'])
+            num_affs = len(article['aff'])
             affs = []
             for i in range(0,3):
                 if num_affs > i:
-                    afftype = self.get_aff_type(metrics['aff'][i], aff_defs)
+                    afftype = self.get_aff_type(article['aff'][i], aff_defs)
                     if not afftype: continue
                     affs.append(afftype)
                     if i == 0:
@@ -605,7 +600,7 @@ class PublicationDB(MongoDBConnector):
             rows = self.get_articles_by_mission_years_instrument(mission, year_begin, year_end, instrument)
             for row in rows:
                 if int(row['year']) <= year_end:
-                    result[mission][int(row['year'])] = row['COUNT(*)']
+                    result[mission][int(row['year'])] = row['count']
         # Also combine counts
         result['both'] = {}
         for year in range(year_begin, year_end + 1):
@@ -695,15 +690,7 @@ class PublicationDB(MongoDBConnector):
 
         #all done
         log.info(f'\nFinished reviewing all articles for {month}.')
-        self.push_reminder()
         return True
-
-
-    def push_reminder(self):
-        log.info(HIGHLIGHTS['RED'] +
-              "\nREMINDER: Do a `make push` to update the data files in github!" +
-              HIGHLIGHTS['END'])
-
 
     def open_pdf(self, bibcode):
         '''Open PDF file in local browser.  Download if necessary.'''
@@ -996,8 +983,22 @@ def kpub_stats(args=None):
         f.write(markdown.encode("utf-8"))  # Legacy Python
     f.close()
 
-    pubdb.push_reminder()
+def kpub_plot_data(args=None):
+    """Creates beautiful plots of the database."""
+    parser = argparse.ArgumentParser(description="retrieves beautiful plotting data from the database.")
+    parser.add_argument('plotname', default='plot_by_year', type=str,
+                        help='Name of the plot to get data for.', choices=['plot_by_year', 'plot_author_count', 'plot_by_instrument'])
+    parser.add_argument('instruments', nargs='?', default=None,
+                        help='Instruments to plot. Pipe separated list. e.g. "ESI|HIRES|NIRSPEC"')
+    parser.add_argument('year_begin', nargs='?', default=None,
+                        help='year to begin the data collection. e.g. "2015"')
+    parser.add_argument('extrapolate', nargs='?', default=False,
+                        help='Extrapolate the data to the current date.')
 
+    args = parser.parse_args(args)
+    config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
+    pubdb = PublicationDB(config)
+    return pubdb.get_plot_data(plotname=args.plotname, instruments=args.instruments, extrapolate=args.extrapolate, year_begin=args.year_begin)
 
 def kpub_plot(args=None):
     """Creates beautiful plots of the database."""
@@ -1006,9 +1007,7 @@ def kpub_plot(args=None):
 
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
     pubdb = PublicationDB(config)
-    pubdb.plot()
-    pubdb.push_reminder()
-
+    pubdb.get_plot()
 
 def kpub_update(args=None):
     """Interactively query ADS for new publications."""
@@ -1154,11 +1153,10 @@ def kpub_spreadsheet(args=None):
     spreadsheet = []
     rows = db.select_for_spreadsheet()
     for row in rows:
-        metrics = row['metrics']
         try:
-            if 'REFEREED' in metrics['property']:
+            if 'REFEREED' in row['property']:
                 refereed = 'REFEREED'
-            elif 'NOT REFEREED' in metrics['property']:
+            elif 'NOT REFEREED' in row['property']:
                 refereed = 'NOT REFEREED'
             else:
                 refereed = ''
@@ -1171,7 +1169,7 @@ def kpub_spreadsheet(args=None):
             dateobj = datetime.datetime.strptime(row['date'], '%Y-00-00')
         publication_age = datetime.datetime.now() - dateobj
         try:
-            citations_per_year = metrics['citation_count'] / (publication_age.days / 365)
+            citations_per_year = row['citation_count'] / (publication_age.days / 365)
         except (TypeError, ZeroDivisionError):
             citations_per_year = 0
 
@@ -1183,19 +1181,19 @@ def kpub_spreadsheet(args=None):
                     ('date_modified', row['date_modified']),
                     ('last_modifier', row['last_modifier']),
                     ('refereed', refereed),
-                    ('citation_count', metrics['citation_count']),
+                    ('citation_count', row['citation_count']),
                     ('citations_per_year', round(citations_per_year, 2)),
-                    ('read_count', str(metrics['read_count'])),
-                    ('first_author_norm', str(metrics['first_author_norm'])),
-                    ('title', metrics['title'][0]),
-                    ('keyword_norm', str(metrics.get('keyword_norm'))),
-                    ('keyword', str(metrics.get('keyword'))),
-                    ('abstract', metrics['abstract']),
-                    ('co_author_norm', str(metrics['author_norm'])),
-                    ('instruments', str(metrics['instruments'])),
-                    ('archive', str(metrics['archive'])),
+                    ('read_count', str(row['read_count'])),
+                    ('first_author_norm', str(row['first_author_norm'])),
+                    ('title', row['title'][0]),
+                    ('keyword_norm', str(row.get('keyword_norm'))),
+                    ('keyword', str(row.get('keyword'))),
+                    ('abstract', row['abstract']),
+                    ('co_author_norm', str(row['author_norm'])),
+                    ('instruments', str(row['instruments'])),
+                    ('archive', str(row['archive'])),
                     ('affiliation', str(row['affiliation'])),
-                    ('affiliations', str(metrics['aff']))
+                    ('affiliations', str(row['aff']))
                     ])
         spreadsheet.append(myrow)
 
@@ -1218,6 +1216,7 @@ if __name__ == '__main__':
     cmd = sys.argv[1]
     if   cmd == 'update':      kpub_update(sys.argv[2:])
     elif cmd == 'plot':        kpub_plot(sys.argv[2:])
+    elif cmd == 'plot_data':        kpub_plot_data(sys.argv[2:])
     elif cmd == 'add':         kpub_add(sys.argv[2:])
     elif cmd == 'add_interactively': kpub_add(sys.argv[2:], True)
     elif cmd == 'delete':      kpub_delete(sys.argv[2:])

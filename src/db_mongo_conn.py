@@ -121,8 +121,7 @@ class MongoDBConnector:
             else:
                 query['year'] = year
 
-        projection = {'year': 1, 'month': 1, 'metrics': 1, 'bibcode': 1, '_id': 0}
-        rows = list(self.collection.find(query, projection).sort('date', pymongo.DESCENDING))
+        rows = list(self.collection.find(query).sort('date', pymongo.DESCENDING))
         return rows
 
     def get_metadata(self, bibcode):
@@ -200,6 +199,7 @@ class MongoDBConnector:
             {'$group': {'_id': '$year', 'count': {'$sum': 1}}}
         ]
         rows = list(self.collection.aggregate(pipeline))
+        rows = [{'year': row['_id'], 'count': row['count']} for row in rows]
         return rows
 
     def get_count_cumulative(self, mission, year):

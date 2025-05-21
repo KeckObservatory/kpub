@@ -728,8 +728,9 @@ class PublicationDB(MongoDBConnector):
         )
         key = self.config.get('ADS_API_KEY')
         headers = {'Authorization': f'Bearer {key}'}
-        r = requests.get(url, headers=headers)
-        data = r.json()
+        resp = requests.get(url, headers=headers)
+        assert resp.status_code != 429, 'you have exceeded the number of times you can query ADS. Try again later'
+        data = resp.json()
         return data
 
 
@@ -809,8 +810,8 @@ def get_word_match_counts_by_query(bibcode, words, ads_api_key):
             "&hl.maxAnalyzedChars=500000"
         )
         headers = {'Authorization': f'Bearer {ads_api_key}'}
-        r = requests.get(url, headers=headers)
-        data = r.json()
+        resp = requests.get(url, headers=headers)
+        data = resp.json()
         counts[word] = {'count': 0, 'snippets': []}
         for doc in data.get('response', {}).get('docs',[]):
             id = doc['id']
@@ -866,12 +867,12 @@ def get_pdf_file(bibcode, ads_api_key):
     url = f'https://ui.adsabs.harvard.edu/link_gateway/{bibcode}/EPRINT_PDF'
     #url = f'https://ui.adsabs.harvard.edu/link_gateway/{bibcode}/PUB_PDF'
     headers = {f'Authorization': f'Bearer {ads_api_key}'}
-    r = requests.get(url, headers=headers)
-    if r.status_code != 200 or len(r.content) < 1000:
+    resp = requests.get(url, headers=headers)
+    if resp.status_code != 200 or len(r.content) < 1000:
         print("Could not download PDF file.")
         return False
     with open(outfile, 'wb') as f:
-         f.write(r.content)
+         f.write(resp.content)
     return outfile
 
 

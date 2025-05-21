@@ -393,7 +393,7 @@ def get_plot_instruments_data(db,
         vals = [idata[year] for year in idata]
         values.append(vals)
     plotdata = {
-        'years': [years] * len(instrs),
+        'years': years,
         'values': values,
         'columns': instrs,
         'color': pallete[0:len(instrs)]
@@ -425,6 +425,8 @@ def plot_instruments(db,
     plotdata, years = get_plot_instruments_data(db, year_begin=year_begin,
                                            mission='keck',
                                            instruments=instruments)
+
+    plotdata['years'] = [years] * len(plotdata['columns']) # for bokeh
     src = ColumnDataSource(plotdata)
     pdb.set_trace()
     p = figure(width=1000, height=800, x_range=years)

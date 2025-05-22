@@ -42,7 +42,7 @@ export const adminColumns = [
 export function EditToolbar(props: EditToolbarProps) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isStepperOpen, setIsStepperOpen] = useState(false);
-    const [isPlotOpen, setIsPlotOpen] = useState(false);
+    const [_, setIsPlotOpen] = useState(false);
     const context = useStateContext()
 
     const openDialog = (type: string) => {
@@ -55,10 +55,6 @@ export function EditToolbar(props: EditToolbarProps) {
             handleOpenPlot()
         }
     }
-
-    const handleClosePlot = () => {
-        setIsPlotOpen(false);
-    };
 
     const handleOpenPlot = () => {
         setIsDialogOpen(false);

@@ -1,3 +1,5 @@
+export const ADS_URL = "https://ui.adsabs.harvard.edu"
+
 export const apiURL = '/api/kpub'
 export const keckURL = 'https://www.keckobservatory.org/'
 export const HIGHTLIGHTED_WORDS = ['Keck',
@@ -19,7 +21,7 @@ export const INSTRUMENTS = [
     "ESI",
     "KPIC",
     "KPF",
-    "KECK/SCALES",
+    "SCALES",
     "HISPEC",
     "HIRES",
     "KCWI",
@@ -33,24 +35,6 @@ export const INSTRUMENTS = [
     "LGS",
     "NGS",
 ]
-
-export const columns = [
-    { field: 'title', headerName: 'TITLE', width: 300 },
-    { field: 'bibcode', headerName: 'BIBCODE', width: 180 },
-    { field: 'year', headerName: 'YEAR', width: 70 },
-    { field: 'month', headerName: 'MONTH', width: 70 },
-    { field: 'instruments', headerName: 'INST', width: 90 },
-]
-
-export const adminColumns = [
-    ...columns,
-    { field: 'id', headerName: 'ID', width: 90 },
-    { field: 'archive', headerName: 'KOA?', width: 70 },
-    { field: 'affiliation', headerName: 'AFFILIATION', width: 150 },
-    { field: 'date_modified', headerName: 'DATE_MODIFIED', width: 150 },
-    { field: 'last_modifier', headerName: 'LAST_MODIFIER', width: 150 }
-]
-
 
 export const mock_plot_data_by_instrument = {
     'years': ['2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'],

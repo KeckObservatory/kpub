@@ -1,6 +1,6 @@
 import { DataGrid, type GridColDef, type GridRowSelectionModel, type GridToolbarProps, type ToolbarPropsOverrides } from '@mui/x-data-grid';
 import { useStateContext, type Article } from './App';
-import { mock_rows, columns, adminColumns } from './config'
+import { mock_rows, ADS_URL } from './config'
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import { Toolbar } from '@mui/x-data-grid';
@@ -13,6 +13,31 @@ import { MonthYearPicker } from './monthyear_picker';
 interface EditToolbarProps extends GridToolbarProps, ToolbarPropsOverrides {
     selectedArticles: Article[];
 }
+
+const ads_link = (x:string) => `${ADS_URL}/abs/${x}/abstract`
+
+export const columns: GridColDef<Article>[]  = [
+    { field: 'title', headerName: 'TITLE', width: 300 },
+    { field: 'bibcode', headerName: 'BIBCODE', width: 180, 
+        renderCell: (params) => {
+            return (<a href={ads_link(params.value)} target="_blank" rel="noopener noreferrer">{params.value}</a>)
+
+    }},
+    { field: 'year', headerName: 'YEAR', width: 70 },
+    { field: 'month', headerName: 'MONTH', width: 70 },
+    { field: 'instruments', headerName: 'INST', width: 90 },
+]
+
+export const adminColumns = [
+    ...columns,
+    { field: 'id', headerName: 'ID', width: 90 },
+    { field: 'archive', headerName: 'KOA?', width: 70 },
+    { field: 'affiliation', headerName: 'AFFILIATION', width: 150 },
+    { field: 'date_modified', headerName: 'DATE_MODIFIED', width: 150 },
+    { field: 'last_modifier', headerName: 'LAST_MODIFIER', width: 150 }
+]
+
+
 
 export function EditToolbar(props: EditToolbarProps) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);

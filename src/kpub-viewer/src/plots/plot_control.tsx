@@ -4,7 +4,6 @@ import FormLabel from "@mui/material/FormLabel"
 import InputLabel from "@mui/material/InputLabel"
 import Radio from "@mui/material/Radio"
 import RadioGroup from "@mui/material/RadioGroup"
-import type { SelectChangeEvent } from "@mui/material/Select"
 import Select from "@mui/material/Select"
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers"
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs"
@@ -20,6 +19,7 @@ import Dialog from "@mui/material/Dialog"
 import DialogTitle from "@mui/material/DialogTitle"
 import DialogContent from "@mui/material/DialogContent"
 import DialogActions from "@mui/material/DialogActions"
+import { FormGroup, Stack } from "@mui/material"
 
 export type CountType = 'first_author' | 'author' | 'paper'
 export type PlotNames = 'data_by_count' | 'data_by_instrument' | 'data_by_year'
@@ -30,7 +30,7 @@ interface PlotTypeButtonGroupProps {
 }
 
 interface InstrumentsMultipleSelectProps {
-    instruments: string[] | string
+    instruments: string[]
     setInstruments: (name: string[]) => void
 }
 
@@ -56,36 +56,46 @@ const CountTypeButtonGroup = (props: PlotTypeButtonGroupProps) => {
 const InstrumentsMultipleSelect = (props: InstrumentsMultipleSelectProps) => {
     const { instruments, setInstruments } = props
 
-    const handleChange = (event: SelectChangeEvent<typeof instruments>) => {
-        const {
-            target: { value },
-        } = event;
-        setInstruments(
-            // On autofill we get a stringified value.
-            typeof value === 'string' ? value.split(',') : value,
-        );
-    };
+    const handleChangeCheckbox = (event: React.SyntheticEvent<Element>, checked: boolean) => {
+        const { name } = (event.target as HTMLInputElement)
+        if (name.includes('select_all') && !checked) {
+            setInstruments([])
+        }
+        else if (name.includes('select_all') && checked) {
+            setInstruments(INSTRUMENTS)
+        }
+        else if (checked) {
+            setInstruments([...instruments, name])
+        }
+        else {
+            setInstruments(instruments.filter((item) => item !== name))
+        }
+    }
 
     return (
-        <FormControl sx={{ m: 1, width: 300 }}>
-            <InputLabel id="multiple-instrument-label">Instruments</InputLabel>
-            <Select
-                labelId="multiple-instrument-label"
-                id="multiple-instrument"
-                multiple
-                value={instruments}
-                onChange={handleChange}
-                input={<OutlinedInput label="Name" />}
-            >
-                {INSTRUMENTS.map((name) => (
-                    <MenuItem
+        <FormControl fullWidth sx={{ width: '100%' }}>
+            <FormLabel id="multiple-instrument-label">Instruments</FormLabel>
+            <FormGroup >
+                <FormControlLabel
+                    key={'select-all'}
+                    control={<Checkbox checked={instruments.length == INSTRUMENTS.length} />}
+                    label={'Select All Instruments'}
+                    onChange={handleChangeCheckbox}
+                    name={'select_all'}
+                />
+            </FormGroup>
+            <FormGroup row>
+                {INSTRUMENTS.map((name => (
+                    <FormControlLabel
                         key={name}
-                        value={name}
-                    >
-                        {name}
-                    </MenuItem>
-                ))}
-            </Select>
+                        control={<Checkbox checked={instruments.includes(name)} />}
+                        label={name}
+                        labelPlacement="bottom"
+                        onChange={handleChangeCheckbox}
+                        name={name}
+                    />
+                )))}
+            </FormGroup>
         </FormControl>
     );
 }
@@ -94,52 +104,60 @@ const InstrumentsMultipleSelect = (props: InstrumentsMultipleSelectProps) => {
 const PlotControl = () => {
     const [countType, setCountType] = useState<CountType>("author")
     const [startYear, setStartYear] = useState<number | undefined>(2009)
-    const [instruments, setInstruments] = useState<string[] | string>([])
+    const [instruments, setInstruments] = useState<string[]>(INSTRUMENTS)
     const [extrapolate, setExtrapolate] = useState(false)
     const [plotName, setPlotName] = useState<PlotNames>("data_by_instrument")
 
     return (
-        <>
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                    label={'year'}
-                    openTo="year"
-                    views={['year']}
-                    maxDate={dayjs(new Date())}
-                    minDate={dayjs('2000-01-01')}
-                    value={dayjs(`${startYear}-01-01`)}
-                    onChange={(newValue) => {
-                        console.log('newValue:', newValue)
-                        setStartYear(newValue?.year())
-                    }}
-                />
-            </LocalizationProvider>
-            {plotName === 'data_by_year' && (
-                <FormControlLabel
-                    control={<Checkbox checked={extrapolate} onChange={(e) => setExtrapolate(e.target.checked)} />}
-                    label="Extrapolate"
-                />
-            )}
+        <Stack sx={{ marginTop: '10px', padding: '5px' }} spacing={2}>
+            <Stack direction="row" spacing={2}>
+                <FormControl sx={{ m: 1 }}>
+                    <InputLabel id="multiple-instrument-label">Plot Type</InputLabel>
+                    <Select
+                        value={plotName}
+                        sx={{ width: '200px' }}
+                        onChange={(e) => setPlotName(e.target.value as PlotNames)}
+                        input={<OutlinedInput label="Plot Type" />}
+                        label="Plot Type"
+                        fullWidth
+                    >
+                        <MenuItem value="data_by_count">Cumulative</MenuItem>
+                        <MenuItem value="data_by_instrument">By Instrument</MenuItem>
+                        <MenuItem value="data_by_year">By Year</MenuItem>
+                    </Select>
+                </FormControl>
+                <LocalizationProvider
+                    dateAdapter={AdapterDayjs}>
+                    <DatePicker
+                        sx={{ width: '150px' }}
+                        label={'Starting Year'}
+                        openTo="year"
+                        views={['year']}
+                        maxDate={dayjs(new Date())}
+                        minDate={dayjs('2000-01-01')}
+                        value={dayjs(`${startYear}-01-01`)}
+                        onChange={(newValue) => {
+                            console.log('newValue:', newValue)
+                            setStartYear(newValue?.year())
+                        }}
+                    />
+                </LocalizationProvider>
+                {plotName === 'data_by_year' && (
+                    <FormControlLabel
+                        control={<Checkbox checked={extrapolate} onChange={(e) => setExtrapolate(e.target.checked)} />}
+                        label="Extrapolate"
+                    />
+                )}
+                {plotName === 'data_by_count' && (
+                    <CountTypeButtonGroup countType={countType} setCountType={setCountType} />
+                )}
+            </Stack>
             {plotName === 'data_by_instrument' && (
                 <InstrumentsMultipleSelect
                     instruments={instruments}
                     setInstruments={setInstruments}
                 />
             )}
-            {plotName === 'data_by_count' && (
-                <CountTypeButtonGroup countType={countType} setCountType={setCountType} />
-            )}
-            <Select
-                value={plotName}
-                onChange={(e) => setPlotName(e.target.value as PlotNames)}
-                input={<OutlinedInput label="Plot Type" />}
-                label="Plot Type"
-                fullWidth
-            >
-                <MenuItem value="data_by_count">Cumulative</MenuItem>
-                <MenuItem value="data_by_instrument">By Instrument</MenuItem>
-                <MenuItem value="data_by_year">By Year</MenuItem>
-            </Select>
             <PlotDisplay
                 plotname={plotName}
                 start_year={startYear}
@@ -147,7 +165,7 @@ const PlotControl = () => {
                 extrapolate={extrapolate}
                 countType={countType}
             />
-        </>
+        </Stack>
     )
 
 }
@@ -172,7 +190,7 @@ export const PlotControlDialog = () => {
                     <PlotControl />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleClose} color="secondary">
+                    <Button onClick={handleClose} variant="contained">
                         Close
                     </Button>
                 </DialogActions>

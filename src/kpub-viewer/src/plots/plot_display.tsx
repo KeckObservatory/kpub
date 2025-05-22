@@ -31,11 +31,11 @@ interface PlotDataByYear {
 }
 
 interface Props {
-    plotname:  PlotNames,
+    plotname: PlotNames,
     start_year?: number,
     instruments?: string[],
     extrapolate?: boolean,
-    countType?: CountType 
+    countType?: CountType
 }
 
 export const PlotDisplay = (props: Props) => {
@@ -67,8 +67,6 @@ export const PlotDisplay = (props: Props) => {
         let newLayout: any = {}
         let newTraces: any = []
         switch (plotname) {
-
-            default:
             case 'data_by_instrument':
                 data = plot_data as PlotDataByInstrument
                 newTraces = data.values.map((value: number, index: number) => {
@@ -83,26 +81,26 @@ export const PlotDisplay = (props: Props) => {
                     }
                 })
                 newLayout = {
-                    title: 'Data by Instrument',
+                    title: { text: 'Data by Instrument' },
                     size: {
                         width: 800,
                         height: 600,
                     },
                     xaxis: {
-                        title: 'Year',
+                        title: { text: 'Year' },
                         tickvals: data.years,
                     },
                     yaxis: {
-                        title: 'Number of Papers',
+                        title: { text: 'Number of Papers' },
                     },
                     showlegend: true,
-                    legend: {
-                        orientation: 'h',
-                        xanchor: 'center',
-                        yanchor: 'bottom',
-                        x: 0.5,
-                        y: -0.2,
-                    },
+                    // legend: {
+                    //     orientation: 'h',
+                    //     xanchor: 'center',
+                    //     yanchor: 'bottom',
+                    //     x: 0.5,
+                    //     y: -0.2,
+                    // },
                 }
                 break;
             case 'data_by_year':
@@ -117,17 +115,17 @@ export const PlotDisplay = (props: Props) => {
                     }
                 })
                 newLayout = {
-                    title: 'Data by Year',
+                    title: { text: 'Data by Year' },
                     size: {
                         width: 800,
                         height: 600,
                     },
                     xaxis: {
-                        title: 'Year',
+                        title: { text: 'Year' },
                         tickvals: Object.keys(data.counts.keck),
                     },
                     yaxis: {
-                        title: 'Number of Papers',
+                        title: { text: 'Number of Papers' },
                     },
                     showlegend: true,
                     legend: {
@@ -149,20 +147,22 @@ export const PlotDisplay = (props: Props) => {
                     name: 'Paper Count',
                 }]
                 newLayout = {
-                    title: key.split('_').join(' ').toUpperCase(),
+                    title: { text: key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') },
                     xaxis: {
-                        title: 'Year',
+                        title: { text: 'Year' },
                     },
                     yaxis: {
-                        title: countType === 'first_author' ? 'First Author Count' : countType === 'author' ? 'Author Count' : 'Paper Count',
+                        title: { text: countType === 'first_author' ? 'First Author Count' : countType === 'author' ? 'Author Count' : 'Paper Count' },
                     },
                     showlegend: true,
                 }
                 break;
         }
+        console.log('New traces:', newTraces)
+        console.log('New layout:', newLayout)
         setTraces(newTraces)
         setLayout(newLayout)
-    }, [plot_data, countType ])
+    }, [plot_data, countType])
 
     return (
         <Plot

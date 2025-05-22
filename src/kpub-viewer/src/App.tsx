@@ -5,7 +5,7 @@ import { apiURL } from './config'
 import { CssBaseline, ThemeProvider } from '@mui/material'
 import { ArticleTable } from './article_table'
 import { TopBar } from './top_bar'
-import { rows } from './config'
+import { mock_rows } from './config'
 import { Box } from '@mui/material'
 
 //export const apiURL = 'http://vm-dev-appserver/api/kpub'
@@ -125,7 +125,7 @@ function App() {
       setState((prevState) => {
         return {
           ...prevState,
-          articles: rows as unknown as Article[],
+          articles: mock_rows as unknown as Article[],
         }
       })
     })

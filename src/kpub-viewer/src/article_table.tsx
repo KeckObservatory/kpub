@@ -1,6 +1,6 @@
 import { DataGrid, type GridColDef, type GridRowSelectionModel, type GridToolbarProps, type ToolbarPropsOverrides } from '@mui/x-data-grid';
 import { useStateContext, type Article } from './App';
-import { rows, columns, adminColumns } from './config'
+import { mock_rows, columns, adminColumns } from './config'
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import { Toolbar } from '@mui/x-data-grid';
@@ -17,6 +17,7 @@ interface EditToolbarProps extends GridToolbarProps, ToolbarPropsOverrides {
 export function EditToolbar(props: EditToolbarProps) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isStepperOpen, setIsStepperOpen] = useState(false);
+    const [isPlotOpen, setIsPlotOpen] = useState(false);
     const context = useStateContext()
 
     const openDialog = (type: string) => {
@@ -25,11 +26,25 @@ export function EditToolbar(props: EditToolbarProps) {
         } else if (type === 'stepper') {
             handleOpenStepper()
         }
+        else if (type === 'plot') {
+            handleOpenPlot()
+        }
     }
+
+    const handleClosePlot = () => {
+        setIsPlotOpen(false);
+    };
+
+    const handleOpenPlot = () => {
+        setIsDialogOpen(false);
+        setIsStepperOpen(false);
+        setIsPlotOpen(true);
+    };
 
     const handleOpenDialog = () => {
         setIsDialogOpen(true);
         setIsStepperOpen(false);
+        setIsPlotOpen(false);
     };
 
     const handleCloseDialog = () => {
@@ -39,6 +54,7 @@ export function EditToolbar(props: EditToolbarProps) {
     const handleOpenStepper = () => {
         setIsStepperOpen(true);
         setIsDialogOpen(false);
+        setIsPlotOpen(false);
     };
 
     const handleCloseStepper = () => {
@@ -49,6 +65,9 @@ export function EditToolbar(props: EditToolbarProps) {
         <Toolbar style={{padding: '5px', marginTop: '20px', marginBottom: '20px' }}> 
             <Stack sx={{marginBottom: '20px'}}direction="row" spacing={5}>
                 <MonthYearPicker />
+                <Button color="primary" onClick={() => openDialog('plot')} variant="contained">
+                    See Plots of published articles 
+                </Button>
                 {context?.isAdmin.current && (
                     <>
                         <Button color="primary" onClick={() => openDialog('bulk')} variant="contained">
@@ -78,7 +97,7 @@ export const ArticleTable = () => {
     const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>();
     const selectedArticles = useMemo(() => {
         // Get the selected rows based on the rowSelectionModel
-        const sa = (rows as unknown as Article[]).filter((row) =>
+        const sa = (mock_rows as unknown as Article[]).filter((row) =>
             rowSelectionModel?.ids.has(row._id)
         );
 
@@ -112,8 +131,9 @@ export const ArticleTable = () => {
             rowSelectionModel={rowSelectionModel}
             checkboxSelection={true}
             disableMultipleRowSelection={false}
-            rows={rows as unknown as Article[]}
+            rows={mock_rows as unknown as Article[]}
             columns={cols}
         />
     );
 };
+

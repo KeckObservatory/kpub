@@ -7,6 +7,7 @@ import DoorFrontIcon from '@mui/icons-material/DoorFront';
 import IconButton from '@mui/material/IconButton';
 import React from 'react';
 import { keckURL } from './config';
+import { PlotControlDialog } from './plots/plot_control';
 
 // interface Props {
 //   darkMode: boolean,
@@ -46,6 +47,7 @@ export function TopBar() {
         >
           Keck Publications
         </Typography>
+        <PlotControlDialog />
         <Tooltip title="Return to Keck Homepage">
           <IconButton
             aria-label="open drawer"

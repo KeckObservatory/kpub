@@ -988,7 +988,7 @@ def kpub_plot_data(args=None):
     """Creates beautiful plots of the database."""
     parser = argparse.ArgumentParser(description="retrieves beautiful plotting data from the database.")
     parser.add_argument('plotname', default='plot_by_year', type=str,
-                        help='Name of the plot to get data for.', choices=['plot_by_year', 'plot_author_count', 'plot_by_instrument'])
+                        help='Name of the plot to get data for.')
     parser.add_argument('instruments', nargs='?', default=None,
                         help='Instruments to plot. Pipe separated list. e.g. "ESI|HIRES|NIRSPEC"')
     parser.add_argument('year_begin', nargs='?', default=None,

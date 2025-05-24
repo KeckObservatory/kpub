@@ -927,16 +927,8 @@ def prompt_grouping(valmap, type):
 # Command-line interfaces
 #########################
 
-def kpub_stats(args=None):
+def kpub_stats():
     """Save the publication stats in Markdown format."""
-
-    parser = argparse.ArgumentParser(
-        description="Save the publication stats in markdown format.")
-    parser.add_argument('--mission', dest="mission", type=str, default=None,
-                        help="Only show a particular mission. Defaults to all.")
-    parser.add_argument('-m', '--month', action='store_true',
-                        help='Group the papers by month rather than year.')
-    args = parser.parse_args(args)
 
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
     title = config.get('prepend', '').capitalize()
@@ -984,95 +976,58 @@ def kpub_stats(args=None):
         f.write(markdown.encode("utf-8"))  # Legacy Python
     f.close()
 
-def kpub_plot_data(args=None):
-    """Creates beautiful plots of the database."""
-    parser = argparse.ArgumentParser(description="retrieves beautiful plotting data from the database.")
-    parser.add_argument('plotname', default='plot_by_year', type=str,
-                        help='Name of the plot to get data for.')
-    parser.add_argument('instruments', nargs='?', default=None,
-                        help='Instruments to plot. Pipe separated list. e.g. "ESI|HIRES|NIRSPEC"')
-    parser.add_argument('year_begin', nargs='?', default=None,
-                        help='year to begin the data collection. e.g. "2015"')
-    parser.add_argument('extrapolate', nargs='?', default=False,
-                        help='Extrapolate the data to the current date.')
-
-    args = parser.parse_args(args)
+def kpub_plot_data(plotname, instruments=None, year_begin=None, extrapolate=False):
+    """Creates beautiful data for plotting."""
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
     pubdb = PublicationDB(config)
-    return pubdb.get_plot_data(plotname=args.plotname, instruments=args.instruments, extrapolate=args.extrapolate, year_begin=args.year_begin)
+    return pubdb.get_plot_data(plotname=plotname, instruments=instruments, extrapolate=extrapolate, year_begin=year_begin)
 
-def kpub_plot(args=None):
+def kpub_plot():
     """Creates beautiful plots of the database."""
-    parser = argparse.ArgumentParser(description="Creates beautiful plots of the database.")
-    args = parser.parse_args(args)
-
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
     pubdb = PublicationDB(config)
     pubdb.get_plot()
 
-def kpub_update(args=None):
+def kpub_update(month):
     """Interactively query ADS for new publications."""
-    parser = argparse.ArgumentParser(
-        description="Interactively query ADS for new publications.")
-    parser.add_argument('month', nargs='?', default=None,
-                        help='Month to query, YYYY-MM or YYYY. e.g. "2015-06" or "2020"')
-    args = parser.parse_args(args)
 
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
 
     db = PublicationDB(config)
-    success = db.update(month=args.month)
+    success = db.update(month=month)
     return success
 
-def kpub_add(args=None, interactive=False):
+def kpub_add(bibcodes, interactive=False):
     """Add a publication with a known ADS bibcode."""
-    parser = argparse.ArgumentParser(
-        description="Add a paper to the publication list.")
-    parser.add_argument('bibcode', nargs='+',
-                        help='ADS bibcode that identifies the publication.')
-    args = parser.parse_args(args)
 
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
 
     db = PublicationDB(config)
-    for bibcode in args.bibcode:
+    for bibcode in bibcodes:
         db.add_by_bibcode(bibcode, interactive=interactive)
 
 
-def kpub_delete(args=None):
+def kpub_delete(bibcodes):
     """Deletes a publication using its ADS bibcode."""
-    parser = argparse.ArgumentParser(
-        description="Deletes a paper from the publication list.")
-    parser.add_argument('bibcode', nargs='+',
-                        help='ADS bibcode that identifies the publication.')
-    args = parser.parse_args(args)
 
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
 
     db = PublicationDB(config)
-    for bibcode in args.bibcode:
+    for bibcode in bibcodes:
         db.delete_by_bibcode(bibcode)
 
 
-def kpub_import(args=None):
+def kpub_import(jsonfile):
     """Import publications from a json file.
 
     The json file must contain entries of the form "bibcode,mission".
     The actual metadata of each publication will be grabbed using the ADS API,
     hence this routine may take 10-20 minutes to complete.
     """
-    parser = argparse.ArgumentParser(
-        description="Batch-import papers into the publication list "
-                    "from a JSON file. The JSON file must have bibcode"
-                    "For example: '2004ApJ...610.1199G,kepler,astrophysics'.")
-    parser.add_argument('jsonfile',
-                        help="Filename of the JSON file to ingest.")
-    args = parser.parse_args(args)
-
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
 
     db = PublicationDB(config)
-    with open(args.jsonfile, 'r') as f:
+    with open(jsonfile, 'r') as f:
         rows = json.load()
     for row in rows:
         try:
@@ -1099,43 +1054,31 @@ def kpub_set_affiliation(articles, affiliation):
     log.info('Set affiliation for {} articles to {}'.format(len(articles), affiliation))
     
 
-def kpub_export(args=None):
-    parser = argparse.ArgumentParser(
-        description="Batch-export articles as JSON")
-    parser.add_argument('monthyear', type=str, nargs='?', default=datetime.datetime.now().strftime("%Y-%m"),
-                        metavar='YYYY-MM',
-                        help="Month Year to export. YYYY-MM or YYYY. e.g. '2015-06' or '2020'")
-    parser.add_argument('begin_year', type=int, nargs='?',
-                        help="Begining year to export. (if range is desired)")
-    parser.add_argument('affiliation', type=str, nargs='?',
-                        help="Affiliation to export.")
-    parser.add_argument('-filename', type=str, nargs='?',
-                        help="Filename to export to.")
-    args = parser.parse_args(args)
+def kpub_export(monthyear, begin_year=None, filename=None, affiliation=None):
     """Export the database as JSON format."""
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
     db = PublicationDB(config)
-    year, month = args.monthyear.split('-') if '-' in args.monthyear else (args.monthyear, None)
+    year, month = monthyear.split('-') if '-' in monthyear else (monthyear, None)
     year, month = int(year), int(month) if month else None
-    articles = db.get_articles(begin_year=args.begin_year, end_year=year, month=month, affiliation=args.affiliation)
+    articles = db.get_articles(begin_year=begin_year, end_year=year, month=month, affiliation=affiliation)
     if not articles:
         log.info('No rows found.')
         return []
     # Convert to a list of dictionaries
-    if not args.filename:
+    if not filename:
         log.info('No filename specified.  Returning articles as list of dicts.')
         return articles
 
-    with open(args.filename, 'w') as f:
+    with open(filename, 'w') as f:
         json.dump(articles, f, indent=4, default=serialize_datetime)
-    log.info(f'Wrote {len(articles)} articles to {args.filename}')
+    log.info(f'Wrote {len(articles)} articles to {filename}')
     
 def serialize_datetime(obj):
     if isinstance(obj, datetime.datetime):
         return obj.isoformat()
     raise TypeError("Type not serializable")
 
-def kpub_spreadsheet(args=None):
+def kpub_spreadsheet(filename):
     """Export the publication database to an Excel spreadsheet."""
     try:
         from openpyxl import Workbook
@@ -1144,13 +1087,9 @@ def kpub_spreadsheet(args=None):
         log.error('openpyxl needs to be installed for this feature.')
         sys.exit(1)
 
-    parser = argparse.ArgumentParser(
-        description="Export the publication list in XLS format.")
-    args = parser.parse_args(args)
-
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
 
-    db = PublicationDB(args.f, config)
+    db = PublicationDB(filename, config)
     spreadsheet = []
     rows = db.select_for_spreadsheet()
     for row in rows:
@@ -1211,20 +1150,74 @@ def kpub_spreadsheet(args=None):
         cell.style = 'Pandas'
     wb.save(output_fn)
 
+def make_parser():
 
-if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description="kpub: a tool to manage the publication database.")
+    subparsers = parser.add_subparsers(dest='command')
+    subparsers.required = True
+    update_parser = subparsers.add_parser('update', help='Update the database with new publications.')
+    update_parser.add_argument('month', nargs='?', default=None,
+                        help='Month to query, YYYY-MM or YYYY. e.g. "2015-06" or "2020"')
+
+    plot_parser = subparsers.add_parser('plot', help='Plot the publication data.')
+
+    plot_data_parser = subparsers.add_parser('plot_data', help='Get the data for a plot.')
+    plot_data_parser.add_argument('plotname', nargs='?', default='plot_by_year', type=str,
+                        help='Name of the plot to get data for.')
+    plot_data_parser.add_argument('instruments', nargs='?', default=None,
+                        help='Instruments to plot. Pipe separated list. e.g. "ESI|HIRES|NIRSPEC"')
+    plot_data_parser.add_argument('year_begin', nargs='?', default=None,
+                        help='year to begin the data collection. e.g. "2015"')
+    plot_data_parser.add_argument('extrapolate', nargs='?', default=False,
+                        help='Extrapolate the data to the current date.')
+
+    add_parser = subparsers.add_parser('add', help='Add a publication to the database.')
+    add_parser.add_argument('bibcode', nargs='+',
+                        help='ADS bibcode that identifies the publication.')
+    add_parser.add_argument('-interactive', action='store_true',
+                        help='Interactive mode.  Prompt for each article.')
+
+    delete_parser = subparsers.add_parser('delete', help='Delete a publication from the database.')
+    delete_parser.add_argument('bibcode', nargs='+',
+                        help='ADS bibcode that identifies the publication.')
+    
+    import_parser = subparsers.add_parser('import', help="Batch-import papers into the publication list "
+                    "from a JSON file. The JSON file must have bibcode"
+                    "For example: '2004ApJ...610.1199G,kepler,astrophysics'.")
+    import_parser.add_argument('jsonfile',
+                        help="Filename of the JSON file to ingest.")
+
+    export_parser = subparsers.add_parser('export', help='Batch-export articles to a JSON file.')
+    export_parser.add_argument('monthyear', type=str, nargs='?', default=datetime.datetime.now().strftime("%Y-%m"),
+                        metavar='YYYY-MM',
+                        help="Month Year to export. YYYY-MM or YYYY. e.g. '2015-06' or '2020'")
+    export_parser.add_argument('begin_year', type=int, nargs='?',
+                        help="Begining year to export. (if range is desired)")
+    export_parser.add_argument('affiliation', type=str, nargs='?',
+                        help="Affiliation to export.")
+    export_parser.add_argument('-filename', type=str, nargs='?',
+                        help="Filename to export to.")
+    
+    stats_parser = subparsers.add_parser('stats', help='Get the publication statistics.')
+
+    spreadsheet_parser=subparsers.add_parser('spreadsheet', help='Export the database to a spreadsheet.')
+    spreadsheet_parser.add_argument('filename', type=str, help='Filename of the spreadsheet to export to.')
+
+    return parser
+
+if __name__ == "__main__":
 
     cmd = sys.argv[1]
-    if   cmd == 'update':      kpub_update(sys.argv[2:])
-    elif cmd == 'plot':        kpub_plot(sys.argv[2:])
-    elif cmd == 'plot_data':        kpub_plot_data(sys.argv[2:])
-    elif cmd == 'add':         kpub_add(sys.argv[2:])
-    elif cmd == 'add_interactively': kpub_add(sys.argv[2:], True)
-    elif cmd == 'delete':      kpub_delete(sys.argv[2:])
-    elif cmd == 'import':      kpub_import(sys.argv[2:])
-    elif cmd == 'export':      kpub_export(sys.argv[2:])
-    elif cmd == 'stats':       kpub_stats(sys.argv[2:])
-    elif cmd == 'spreadsheet': kpub_spreadsheet(sys.argv[2:])
+    parser = make_parser()
+    margs = parser.parse_args(sys.argv[1:])
+    if cmd == 'update':      kpub_update(margs.month)
+    elif cmd == 'add':       kpub_add(margs.bibcode, margs.interactive)
+    elif cmd == 'plot':      kpub_plot()
+    elif cmd == 'plot_data': kpub_plot_data(margs.plotname, margs.instruments, margs.year_begin, margs.extrapolate)
+    elif cmd == 'delete':    kpub_delete(margs.bibcode)
+    elif cmd == 'import':    kpub_import(margs.jsonfile)
+    elif cmd == 'export':    kpub_export(margs.monthyear, margs.begin_year, margs.filename, margs.affiliation)
+    elif cmd == 'stats':     kpub_stats()
+    elif cmd == 'spreadsheet': kpub_spreadsheet(margs.filename)
     else: log.error("Unknown kpub command")
-
-

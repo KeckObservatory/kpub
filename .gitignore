@@ -2,6 +2,7 @@
 .DS_Store
 .env
 data/plots/*
+package-lock.json
 data/output/*
 *.txt
 *.png

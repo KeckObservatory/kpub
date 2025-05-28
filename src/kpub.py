@@ -369,9 +369,6 @@ class PublicationDB(MongoDBConnector):
                               year_begin=plots_cfg['year_begin'])
             plot.plot_by_year(self, f"{PLOTDIR}/kpub-publication-rate-no-extrapolation.{ext}", 
                               year_begin=plots_cfg['year_begin'], extrapolate=False)
-            for mission in missions:
-                plot.plot_by_year(self, f"{PLOTDIR}/kpub-publication-rate-{mission}.{ext}", 
-                                 year_begin=plots_cfg['year_begin'])
             plot.plot_author_count(self, f"{PLOTDIR}/kpub-author-count.{ext}", year_begin=plots_cfg['year_begin'])
 
         #bokeh plots
@@ -592,23 +589,16 @@ class PublicationDB(MongoDBConnector):
         """
         # Initialize a dictionary to contain the data to plot
         result = {}
-        missions = self.config.get('missions', [])
-        for mission in missions:
-            result[mission] = {}
-            for year in range(year_begin, year_end + 1):
-                result[mission][year] = 0
-            rows = self.get_articles_by_mission_years_instrument(mission, year_begin, year_end, instrument)
-            for row in rows:
-                if int(row['year']) <= year_end:
-                    result[mission][int(row['year'])] = row['count']
-        # Also combine counts
-        result['both'] = {}
         for year in range(year_begin, year_end + 1):
-            result['both'][year] = sum(result[mission][year] for mission in missions)
+            result[year] = 0
+        rows = self.get_articles_by_mission_years_instrument(year_begin, year_end, instrument)
+        for row in rows:
+            if int(row['year']) <= year_end:
+                result[int(row['year'])] = row['count']
         return result
 
     def get_annual_publication_count_cumulative(self, year_begin=2009, year_end=datetime.datetime.now().year):
-        """Returns a dict containing the cumulative number of publications per year per mission.
+        """Returns a dict containing the cumulative number of publications per year.
 
         Parameters
         ----------
@@ -620,16 +610,10 @@ class PublicationDB(MongoDBConnector):
         """
         # Initialize a dictionary to contain the data to plot
         result = {}
-        missions = self.config.get('missions', [])
-        for mission in missions:
-            result[mission] = {}
-            for year in range(year_begin, year_end + 1):
-                cum = self.get_count_cumulative(mission, str(year))
-                result[mission][year] = cum 
-        # Also combine counts
-        result['both'] = {}
         for year in range(year_begin, year_end + 1):
-            result['both'][year] = sum(result[mission][year] for mission in missions)
+            cum = self.get_count_cumulative(str(year))
+            result[year] = cum 
+        # Also combine counts
         return result
 
     def update(self, month=None):
@@ -947,15 +931,6 @@ def kpub_stats():
         pubdb.save_markdown(output_fn,
                          group_by_month=bymonth,
                          title=f"{title} publications{title_suffix}")
-
-        missions = config.get('missions', [])
-        if len(missions) > 1:
-            for mission in missions:
-                output_fn = f"{MDDIR}/kpub-{config['prepend']}-publications-{mission}{suffix}.md"
-                pubdb.save_markdown(output_fn,
-                                 group_by_month=bymonth,
-                                 mission=mission,
-                                 title=f"{mission.capitalize()} publications{title_suffix}")
 
     # Finally, produce an overview page
     templatedir = os.path.join(PACKAGEDIR, 'templates')

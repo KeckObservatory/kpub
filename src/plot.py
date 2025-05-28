@@ -82,8 +82,7 @@ def get_plot_by_year_data( db,
     """
     # Obtain the dictionary which provides the annual counts
     current_year = datetime.datetime.now().year
-    counts = db.get_annual_publication_count(
-    year_begin=year_begin, year_end=current_year)
+    counts = db.get_articles_by_mission_years_instrument(year_begin=year_begin, year_end=current_year)
 
     # Also plot the extrapolated prediction for the current year
     current_total = None

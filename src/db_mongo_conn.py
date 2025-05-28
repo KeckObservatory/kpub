@@ -185,10 +185,9 @@ class MongoDBConnector:
         rows = list(self.collection.find(query, projection))
         return rows
 
-    def get_articles_by_mission_years_instrument(self, mission, year_begin, year_end, instrument):
-        """Get articles by mission, year range, and instrument."""
+    def get_articles_by_years_instrument(self, year_begin, year_end, instrument):
+        """Get articles by year range, and instrument."""
         query = {
-            'mission': mission,
             'year': {'$gte': year_begin, '$lte': year_end}
         }
         if instrument:
@@ -202,10 +201,9 @@ class MongoDBConnector:
         rows = [{'year': row['_id'], 'count': row['count']} for row in rows]
         return rows
 
-    def get_count_cumulative(self, mission, year):
+    def get_count_cumulative(self, year):
         """Get cumulative count of articles by mission and year."""
         query = {
-            'mission': mission,
             'year': {'$lte': year}
         }
         count = self.collection.count_documents(query)

@@ -1,5 +1,6 @@
 import Plot from 'react-plotly.js';
-import { apiURL, mock_plot_by_count, mock_plot_data_by_instrument, mock_plot_data_by_year } from '../config';
+//import { apiURL, mock_plot_by_count, mock_plot_data_by_instrument, mock_plot_data_by_year } from '../config';
+import { apiURL } from '../config';
 import { useEffect, useState, useMemo } from 'react'
 import type { CountType, PlotNames } from './plot_control';
 
@@ -48,19 +49,19 @@ export const PlotDisplay = (props: Props) => {
     const plot_data = useMemo(async () => {
         switch (plotname) {
             case 'data_by_instrument':
-                const iresp = await fetch(`${apiURL}/get_plot_data?plotname=plot_data_by_instrument&start_year=${start_year || 2000}&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}`)
+                const iresp = await fetch(`${apiURL}/get_plot?plotname=plot_data_by_instrument&start_year=${start_year || 2000}&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}`)
                 const idata = await iresp.json() as PlotDataByInstrument
                 return idata 
             case 'data_by_year':
-                const yresp = await fetch(`${apiURL}/get_plot_data?plotname=plot_data_by_year&start_year=${start_year || 2000}&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}`)
+                const yresp = await fetch(`${apiURL}/get_plot?plotname=plot_data_by_year&start_year=${start_year || 2000}&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}`)
                 const ydata = await yresp.json() as PlotDataByYear
                 return ydata
             case 'data_by_count':
-                const cresp = await fetch(`${apiURL}/get_plot_data?plotname=plot_data_by_count&start_year=${start_year || 2000}&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}&count_type=${countType || 'paper'}`)
+                const cresp = await fetch(`${apiURL}/get_plot?plotname=plot_data_by_count&start_year=${start_year || 2000}&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}&count_type=${countType || 'paper'}`)
                 const cdata = await cresp.json() as PlotDataByCount
                 return cdata
             default:
-                const dresp = await fetch(`${apiURL}/get_plot_data?plotname=plot_data_by_instrument&start_year=${start_year || 2000}&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}`)
+                const dresp = await fetch(`${apiURL}/get_plot?plotname=plot_data_by_instrument&start_year=${start_year || 2000}&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}`)
                 const ddata = await dresp.json() as PlotDataByInstrument
                 return ddata 
         }

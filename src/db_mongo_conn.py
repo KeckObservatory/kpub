@@ -198,8 +198,8 @@ class MongoDBConnector:
             {'$group': {'_id': '$year', 'count': {'$sum': 1}}}
         ]
         rows = list(self.collection.aggregate(pipeline))
-        rows = [{'year': row['_id'], 'count': row['count']} for row in rows]
-        return rows
+        yeardict = {row['_id']: row['count'] for row in rows}
+        return yeardict 
 
     def get_count_cumulative(self, year):
         """Get cumulative count of articles by mission and year."""

@@ -587,15 +587,8 @@ class PublicationDB(MongoDBConnector):
         year_end : int
             Year to end counting. (default: current year)
         """
-        # Initialize a dictionary to contain the data to plot
-        result = {}
-        for year in range(year_begin, year_end + 1):
-            result[year] = 0
-        rows = self.get_articles_by_mission_years_instrument(year_begin, year_end, instrument)
-        for row in rows:
-            if int(row['year']) <= year_end:
-                result[int(row['year'])] = row['count']
-        return result
+        yeardict = self.get_articles_by_years_instrument(year_begin, year_end, instrument)
+        return yeardict 
 
     def get_annual_publication_count_cumulative(self, year_begin=2009, year_end=datetime.datetime.now().year):
         """Returns a dict containing the cumulative number of publications per year.

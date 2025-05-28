@@ -3,6 +3,7 @@
 .env
 data/plots/*
 package-lock.json
+node_modules
 data/output/*
 *.txt
 *.png

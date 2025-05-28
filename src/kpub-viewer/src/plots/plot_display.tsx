@@ -1,5 +1,5 @@
 import Plot from 'react-plotly.js';
-import { mock_plot_by_count, mock_plot_data_by_instrument, mock_plot_data_by_year } from '../config';
+import { apiURL, mock_plot_by_count, mock_plot_data_by_instrument, mock_plot_data_by_year } from '../config';
 import { useEffect, useState, useMemo } from 'react'
 import type { CountType, PlotNames } from './plot_control';
 
@@ -23,10 +23,7 @@ interface PlotDataByYear {
     current_total?: number,
     expected?: number,
     year_begin: number,
-    counts: {
-        keck: { [key: number]: number },
-        both: { [key: number]: number }
-    },
+    counts: { [key: number]: number },
     colors: string[]
 }
 
@@ -48,16 +45,24 @@ export const PlotDisplay = (props: Props) => {
         return null
     }
 
-    const plot_data = useMemo(() => {
+    const plot_data = useMemo(async () => {
         switch (plotname) {
             case 'data_by_instrument':
-                return mock_plot_data_by_instrument as PlotDataByInstrument
+                const iresp = await fetch(`${apiURL}/get_plot_data?plotname=plot_data_by_instrument&start_year=${start_year || 2000}&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}`)
+                const idata = await iresp.json() as PlotDataByInstrument
+                return idata 
             case 'data_by_year':
-                return mock_plot_data_by_year as PlotDataByYear
+                const yresp = await fetch(`${apiURL}/get_plot_data?plotname=plot_data_by_year&start_year=${start_year || 2000}&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}`)
+                const ydata = await yresp.json() as PlotDataByYear
+                return ydata
             case 'data_by_count':
-                return mock_plot_by_count as PlotDataByCount
+                const cresp = await fetch(`${apiURL}/get_plot_data?plotname=plot_data_by_count&start_year=${start_year || 2000}&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}&count_type=${countType || 'paper'}`)
+                const cdata = await cresp.json() as PlotDataByCount
+                return cdata
             default:
-                return mock_plot_data_by_instrument as PlotDataByInstrument
+                const dresp = await fetch(`${apiURL}/get_plot_data?plotname=plot_data_by_instrument&start_year=${start_year || 2000}&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}`)
+                const ddata = await dresp.json() as PlotDataByInstrument
+                return ddata 
         }
     }, [plotname, start_year, instruments, extrapolate])
 
@@ -68,7 +73,7 @@ export const PlotDisplay = (props: Props) => {
         let newTraces: any = []
         switch (plotname) {
             case 'data_by_instrument':
-                data = plot_data as PlotDataByInstrument
+                data = plot_data as unknown as PlotDataByInstrument
                 newTraces = data.values.map((value: number, index: number) => {
                     return {
                         x: data.years,
@@ -104,7 +109,7 @@ export const PlotDisplay = (props: Props) => {
                 }
                 break;
             case 'data_by_year':
-                data = plot_data as PlotDataByYear
+                data = plot_data as unknown as PlotDataByYear
                 newTraces = data.colors.map((color: string) => {
                     return {
                         x: Object.keys(data.counts.keck),
@@ -138,7 +143,7 @@ export const PlotDisplay = (props: Props) => {
                 }
                 break;
             case 'data_by_count':
-                data = plot_data as PlotDataByCount
+                data = plot_data as unknown as PlotDataByCount
                 const key = `${countType}_counts`
                 newTraces = [{
                     x: data.cumulative_years,

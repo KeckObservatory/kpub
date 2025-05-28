@@ -59,7 +59,6 @@ mpl.rcParams["grid.linewidth"] = 1
 def get_plot_by_year_data( db,
                  year_begin=2009,
                  extrapolate=True,
-                 mission='keck',
                  colors=["#3498db", "#27ae60", "#95a5a6"]):
     """Plots a bar chart showing the number of publications per year.
 
@@ -74,15 +73,12 @@ def get_plot_by_year_data( db,
     extrapolate : boolean
         If `True`, extrapolate the publication count in the current year.
 
-    missions : list str
-        Example: ['kepler', 'k2']
-
     colors : list of str
         Define the facecolor for plots
     """
     # Obtain the dictionary which provides the annual counts
     current_year = datetime.datetime.now().year
-    counts = db.get_articles_by_mission_years_instrument(year_begin=year_begin, year_end=current_year)
+    counts = db.get_articles_by_years_instrument(year_begin=year_begin, year_end=current_year)
 
     # Also plot the extrapolated prediction for the current year
     current_total = None
@@ -90,7 +86,7 @@ def get_plot_by_year_data( db,
     if extrapolate:
         now = datetime.datetime.now()
         fraction_of_year_passed = float(now.strftime("%-j")) / 365.2425
-        current_total = counts[mission][current_year]
+        current_total = counts[current_year]
         expected = (1/fraction_of_year_passed - 1) * current_total
     return {
         'current_year': current_year,
@@ -109,7 +105,6 @@ def plot_by_year(db,
                  barwidth=0.75,
                  dpi=200,
                  extrapolate=True,
-                 mission='keck',
                  colors=["#3498db", "#27ae60", "#95a5a6"]):
     """Plots a bar chart showing the number of publications per year.
 
@@ -133,16 +128,12 @@ def plot_by_year(db,
     extrapolate : boolean
         If `True`, extrapolate the publication count in the current year.
 
-    mission : list str
-        Example: 'keck'
-
     colors : list of str
         Define the facecolor for plots
     """
     # Obtain the dictionary which provides the annual counts
     plotdata = get_plot_by_year_data(db, year_begin=year_begin, 
                                       extrapolate=extrapolate,
-                                      mission='keck',
                                       colors=colors)
     current_year = plotdata['current_year']
     expected = plotdata['expected']
@@ -155,10 +146,10 @@ def plot_by_year(db,
     ax = fig.add_subplot(111)
     idx = 0 
     bottom = None
-    pl.bar(np.array(list(counts[mission].keys())),
-            list(counts[mission].values()),
+    pl.bar(np.array(list(counts.keys())),
+            list(counts.values()),
             bottom=bottom,
-            label=mission.capitalize(),
+            label='KECK',
             facecolor=colors[idx],
             width=barwidth)
 
@@ -358,7 +349,6 @@ def plot_author_count(db,
 
 def get_plot_instruments_data(db,
                          year_begin=2009,
-                         mission='keck',
                          instruments=[]):
     """Gets data for a multiline graph showing the number of publications per instrument per year.
 
@@ -381,7 +371,7 @@ def get_plot_instruments_data(db,
         counts = db.get_annual_publication_count(year_begin=year_begin,
                                                     year_end=year_end,
                                                     instrument=instr)
-        data[instr] = counts[mission]
+        data[instr] = counts
 
     years = list(np.arange(year_begin, year_end+1))
     years = [str(year) for year in years]
@@ -403,7 +393,6 @@ def get_plot_instruments_data(db,
 def plot_instruments(db,
                      output_fn='kpub-publications-by-instrument',
                      year_begin=2000,
-                     mission='keck',
                      instruments=[]):
     """Gets data for a multiline graph showing the number of publications per instrument per year.
 
@@ -422,7 +411,6 @@ def plot_instruments(db,
         List of instruments to graph
     """
     plotdata, years = get_plot_instruments_data(db, year_begin=year_begin,
-                                           mission='keck',
                                            instruments=instruments)
 
     plotdata['years'] = [years] * len(plotdata['columns']) # for bokeh
@@ -438,10 +426,10 @@ def plot_instruments(db,
     p.add_layout(Title(text="by instrument",
                        text_font_style="italic"), 'above')
     p.add_layout(Title(
-        text=f"{mission.upper()} publications per year", text_font_size="16pt"), 'above')
+        text=f"Keck publications per year", text_font_size="16pt"), 'above')
     p.legend.location = 'top_left'
 
-    fn = f"{output_fn}-{mission}.html"
+    fn = f"{output_fn}-keck.html"
     log.info(f"Writing {fn}")
     output_file(fn)
     save(p)
@@ -494,7 +482,7 @@ def plot_affiliations(db,
             text=f"{mission.upper()} affiliations per year", text_font_size="16pt"), 'above')
         p.legend.location = 'top_left'
 
-        fn = f"{output_fn}-{mission}.html"
+        fn = f"{output_fn}-keck.html"
         log.info(f"Writing {fn}")
         output_file(fn)
         save(p)

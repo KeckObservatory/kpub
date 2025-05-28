@@ -185,7 +185,7 @@ class MongoDBConnector:
         rows = list(self.collection.find(query, projection))
         return rows
 
-    def get_articles_by_years_instrument(self, year_begin, year_end, instrument):
+    def get_articles_by_years_instrument(self, year_begin, year_end, instrument=None):
         """Get articles by year range, and instrument."""
         query = {
             'year': {'$gte': year_begin, '$lte': year_end}

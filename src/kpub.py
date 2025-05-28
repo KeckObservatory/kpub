@@ -337,7 +337,7 @@ class PublicationDB(MongoDBConnector):
             Name of the plot to get data for.
         """
         year_begin = kwargs.get('year_begin', 2009)
-        if year_begin is None:
+        if year_begin is None: # Sometimes a None is passed
             year_begin = 2009
 
         if plotname == 'plot_by_year':
@@ -980,7 +980,8 @@ def kpub_plot_data(plotname, instruments=None, year_begin=None, extrapolate=Fals
     """Creates beautiful data for plotting."""
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
     pubdb = PublicationDB(config)
-    return pubdb.get_plot_data(plotname=plotname, instruments=instruments, extrapolate=extrapolate, year_begin=year_begin)
+    plotData = pubdb.get_plot_data(plotname=plotname, instruments=instruments, extrapolate=extrapolate, year_begin=year_begin)
+    return plotData
 
 def kpub_plot():
     """Creates beautiful plots of the database."""
@@ -1060,6 +1061,7 @@ def kpub_export(monthyear, begin_year=None, filename=None, affiliation=None):
     db = PublicationDB(config)
     year, month = monthyear.split('-') if '-' in monthyear else (monthyear, None)
     year, month = int(year), int(month) if month else None
+    begin_year = int(begin_year) if begin_year else None
     articles = db.get_articles(begin_year=begin_year, end_year=year, month=month, affiliation=affiliation)
     if not articles:
         log.info('No rows found.')
@@ -1221,3 +1223,6 @@ if __name__ == "__main__":
     elif cmd == 'stats':     kpub_stats()
     elif cmd == 'spreadsheet': kpub_spreadsheet(margs.filename)
     else: log.error("Unknown kpub command")
+
+    kpub_plot_data(args.plotname, args.instruments, args.year_begin, args.extrapolate)
+    kpub_export(args.monthyear, args.begin_year, args.filename, args.affiliation)

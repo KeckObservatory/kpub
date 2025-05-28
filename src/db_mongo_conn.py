@@ -155,7 +155,7 @@ class MongoDBConnector:
             query['affiliation'] = affiliation 
 
         if not begin_year:
-            begin_year = datetime.datetime.now().year
+            begin_year = end_year 
 
         if not end_year:
             query['year'] = begin_year 

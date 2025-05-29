@@ -1,3 +1,4 @@
+from urllib.parse import quote_plus
 import pymongo
 import logging
 from pymongo import MongoClient
@@ -6,25 +7,24 @@ import datetime
 import subprocess
 
 log = logging.getLogger('kpub')
-from urllib.parse import quote_plus
+
 
 class MongoDBConnector:
 
-    def __init__(self, config, database, collection = None):
+    def __init__(self, config, database, collection=None):
 
         self.error = None
         self.readonly = False
 
-        #parse config file
+        # parse config file
         if database not in config.keys():
             self.error = "DATABASE_CONFIG_ERROR"
             return None
         self.dbconfig = config[database]
 
-        self.client     = None
+        self.client = None
         collection = collection if collection else self.dbconfig["collection"]
         self.connect(database, collection)
-
 
     def connect(self, database, collection):
         """
@@ -32,8 +32,8 @@ class MongoDBConnector:
         is specified, then connect to it.  This also set the readOnly flag to 1.
         """
 
-        #get db connect data
-        server         = self.dbconfig["server"] + ":" + str(self.dbconfig["port"])
+        # get db connect data
+        server = self.dbconfig["server"] + ":" + str(self.dbconfig["port"])
         readonlyserver = self.dbconfig.get("readonlyserver", server)
         cmd = ["timeout", "0.5", "ping", "-c", "1", self.dbconfig["server"]]
         try:
@@ -49,8 +49,8 @@ class MongoDBConnector:
         finally:
             p.stdout.close()
 
-        user           = self.dbconfig["user"]
-        pwd            = self.dbconfig["pwd"]
+        user = self.dbconfig["user"]
+        pwd = self.dbconfig["pwd"]
         try:
             if user and pwd:
                 server = f"{user}:{quote_plus(pwd)}@{quote_plus(server)}"
@@ -75,7 +75,8 @@ class MongoDBConnector:
     def add_row(self, article, month, year, mission, snippits, instruments, archive, affiliation):
         """Insert a document into the MongoDB collection."""
         try:
-            article['_id'] = article['bibcode'] # Use bibcode as the unique identifier
+            # Use bibcode as the unique identifier
+            article['_id'] = article['bibcode']
             article['last_modifier'] = 'kpub'
             article['date_modified'] = datetime.datetime.now()
             article['month'] = int(month)
@@ -121,17 +122,20 @@ class MongoDBConnector:
             else:
                 query['year'] = year
 
-        rows = list(self.collection.find(query).sort('date', pymongo.DESCENDING))
+        rows = list(self.collection.find(
+            query).sort('date', pymongo.DESCENDING))
         return rows
 
     def get_metadata(self, bibcode):
         """Retrieve the raw metadata for a given bibcode."""
-        document = self.collection.find_one({'bibcode': bibcode}, {'_id': 0, 'metrics': 1})
+        document = self.collection.find_one(
+            {'bibcode': bibcode}, {'_id': 0, 'metrics': 1})
         return document['metrics'] if document else None
 
     def get_snippits(self, bibcode):
         """Retrieve the snippits for a given bibcode."""
-        document = self.collection.find_one({'bibcode': bibcode}, {'_id': 0, 'snippits': 1})
+        document = self.collection.find_one(
+            {'bibcode': bibcode}, {'_id': 0, 'snippits': 1})
         return document['snippits'] if document else None
 
     def article_exists(self, article):
@@ -144,35 +148,40 @@ class MongoDBConnector:
         if archive:
             query['archive'] = True
 
-        projection = {'bibcode': 1, 'mission': 1, 'instruments': 1, 'archive': 1, 'affiliation': 1, 'date_modified': 1, 'last_modifier': 1, '_id': 0}
-        rows = list(self.collection.find(query, projection).sort('bibcode', pymongo.ASCENDING))
+        projection = {'bibcode': 1, 'mission': 1, 'instruments': 1, 'archive': 1,
+                      'affiliation': 1, 'date_modified': 1, 'last_modifier': 1, '_id': 0}
+        rows = list(self.collection.find(query, projection).sort(
+            'bibcode', pymongo.ASCENDING))
         return rows
 
     def get_articles(self, begin_year=None, end_year=None, month=None, affiliation=None):
         """Get articles from the collection."""
         query = {}
         if affiliation:
-            query['affiliation'] = affiliation 
+            query['affiliation'] = affiliation
 
         if not begin_year:
-            begin_year = end_year 
+            begin_year = end_year
 
         if not end_year:
-            query['year'] = begin_year 
+            query['year'] = begin_year
         else:
-            query['year'] = {'$gte': begin_year, '$lte': end_year} 
+            query['year'] = {'$gte': begin_year, '$lte': end_year}
 
         if month:
             query['month'] = month
 
-        rows = list(self.collection.find(query).sort('date', pymongo.DESCENDING))
+        rows = list(self.collection.find(
+            query).sort('date', pymongo.DESCENDING))
         return rows
 
     def select_for_spreadsheet(self):
         """Select documents for spreadsheet export."""
         query = {'mission': {'$ne': 'unrelated'}}
-        projection = {'bibcode': 1, 'year': 1, 'month': 1, 'date': 1, 'mission': 1, 'metrics': 1, 'affiliation': 1, 'date_modified': 1, 'last_modifier': 1, '_id': 0}
-        rows = list(self.collection.find(query, projection).sort('bibcode', pymongo.ASCENDING))
+        projection = {'bibcode': 1, 'year': 1, 'month': 1, 'date': 1, 'mission': 1,
+                      'metrics': 1, 'affiliation': 1, 'date_modified': 1, 'last_modifier': 1, '_id': 0}
+        rows = list(self.collection.find(query, projection).sort(
+            'bibcode', pymongo.ASCENDING))
         return rows
 
     def get_articles_by_mission_years(self, mission, year_begin, year_end):
@@ -191,7 +200,7 @@ class MongoDBConnector:
             'year': {'$gte': year_begin, '$lte': year_end}
         }
         if instrument:
-            query['instruments'] = {'$regex': instrument, '$options': 'i'}
+            query['instruments'] = {'$elemMatch': {'$regex': instrument, '$options': 'i'}}
 
         pipeline = [
             {'$match': query},
@@ -199,7 +208,7 @@ class MongoDBConnector:
         ]
         rows = list(self.collection.aggregate(pipeline))
         yeardict = {row['_id']: row['count'] for row in rows}
-        return yeardict 
+        return yeardict
 
     def get_count_cumulative(self, year):
         """Get cumulative count of articles by mission and year."""

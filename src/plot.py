@@ -367,7 +367,7 @@ def get_plot_instruments_data(db,
 
     data = {}
     for instr in instruments:
-        year_end = datetime.datetime.now().year - 1
+        year_end = datetime.datetime.now().year
         counts = db.get_annual_publication_count(year_begin=year_begin,
                                                     year_end=year_end,
                                                     instrument=instr)

@@ -86,9 +86,6 @@ export function EditToolbar(props: EditToolbarProps) {
         <Toolbar style={{padding: '5px', marginTop: '20px', marginBottom: '20px' }}> 
             <Stack sx={{marginBottom: '20px'}}direction="row" spacing={5}>
                 <MonthYearPicker />
-                <Button color="primary" onClick={() => openDialog('plot')} variant="contained">
-                    See Plots of published articles 
-                </Button>
                 {context?.isAdmin.current && (
                     <>
                         <Button color="primary" onClick={() => openDialog('bulk')} variant="contained">

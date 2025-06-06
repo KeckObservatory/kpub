@@ -5,7 +5,6 @@ import { apiURL } from './config'
 import { CssBaseline, ThemeProvider } from '@mui/material'
 import { ArticleTable } from './article_table'
 import { TopBar } from './top_bar'
-import { mock_rows } from './config'
 import { Box } from '@mui/material'
 
 //export const apiURL = 'http://vm-dev-appserver/api/kpub'
@@ -98,7 +97,7 @@ function App() {
   const isAdmin = useRef<boolean | null>(null);
 
   const fetchData = async () => {
-    const response = await fetch(`${apiURL}/get_table`)
+    const response = await fetch(`${apiURL}/get_table?monthyear=${monthyear}`)
     if (!response.ok) {
       console.warn('Network response was not ok')
       throw new Error('Network response was not ok')
@@ -121,13 +120,6 @@ function App() {
   useEffect(() => {
     fetchData().catch((error) => {
       console.error('Error fetching data using default:', error)
-      isAdmin.current = true
-      setState((prevState) => {
-        return {
-          ...prevState,
-          articles: mock_rows as unknown as Article[],
-        }
-      })
     })
   }, [monthyear])
 

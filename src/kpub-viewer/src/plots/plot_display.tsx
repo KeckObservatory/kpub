@@ -57,7 +57,7 @@ export const PlotDisplay = (props: Props) => {
                 const ydata = await yresp.json() as PlotDataByYear
                 return ydata
             case 'data_by_count':
-                const cresp = await fetch(`${apiURL}/get_plot?plotname=plot_author_count&start_year=${start_year || 2000}&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}&count_type=${countType || 'paper'}`)
+                const cresp = await fetch(`${apiURL}/get_plot?plotname=plot_author_count&start_year=${start_year || 2000}&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}`)
                 const cdata = await cresp.json() as PlotDataByCount
                 return cdata
             default:
@@ -82,7 +82,8 @@ export const PlotDisplay = (props: Props) => {
             let newTraces: any = []
             switch (plotname) {
                 case 'data_by_instrument':
-                    data = await plot_data as unknown as PlotDataByInstrument
+                    data = dt as unknown as PlotDataByInstrument
+                    console.log('Data by instrument:', data)
                     newTraces = data.values.map((value: number, index: number) => {
                         return {
                             x: data.years,
@@ -118,27 +119,19 @@ export const PlotDisplay = (props: Props) => {
                     }
                     break;
                 case 'data_by_year':
-                    data = await plot_data as unknown as PlotDataByYear
+                    data = dt as unknown as PlotDataByYear
                     console.log('Data by year:', data)
-                    const color = data.color[0]
+                    const color = data.colors[0]
                     newTraces = Object.entries(data.counts).map( ([year, count]: [string, unknown]) => {
-                        return {
+                        const trace = {
                             x: Number(year),
-                            y: Number(count),
+                            y: count,
                             type: 'bar',
                             name: 'Keck',
                             marker: { color },
                         }
+                        return trace
                     })
-                    // newTraces = data.colors.map((color: string, idx: number) => {
-                    //     return {
-                    //         x: yrs[idx],
-                    //         y: cnts[idx],
-                    //         type: 'bar',
-                    //         name: 'Keck',
-                    //         marker: { color: color },
-                    //     }
-                    // })
                     newLayout = {
                         title: { text: 'Data by Year' },
                         size: {
@@ -147,7 +140,6 @@ export const PlotDisplay = (props: Props) => {
                         },
                         xaxis: {
                             title: { text: 'Year' },
-                            tickvals: Object.keys(data.counts.keck),
                         },
                         yaxis: {
                             title: { text: 'Number of Papers' },
@@ -163,8 +155,9 @@ export const PlotDisplay = (props: Props) => {
                     }
                     break;
                 case 'data_by_count':
-                    data = plot_data as unknown as PlotDataByCount
+                    data = dt as unknown as PlotDataByCount
                     const key = `${countType}_counts`
+                    console.log('Data by count:', data, key)
                     newTraces = [{
                         x: data.cumulative_years,
                         y: data[key],

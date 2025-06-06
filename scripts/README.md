@@ -1,5 +1,4 @@
 # kpub scripts
 
-This directory contains scripts to generate ad hoc visualisations
-or lists from the Kepler/K2 publication database.
+This directory contains scripts used outside of normal operations. usually for creating the database from scratch, etc
 

@@ -1,5 +1,4 @@
 import Plot from 'react-plotly.js';
-//import { apiURL, mock_plot_by_count, mock_plot_data_by_instrument, mock_plot_data_by_year } from '../config';
 import { apiURL } from '../config';
 import { useEffect, useState, useMemo } from 'react'
 import type { CountType, PlotNames } from './plot_control';

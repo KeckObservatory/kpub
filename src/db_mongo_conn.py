@@ -207,7 +207,10 @@ class MongoDBConnector:
             {'$group': {'_id': '$year', 'count': {'$sum': 1}}}
         ]
         rows = list(self.collection.aggregate(pipeline))
-        yeardict = {row['_id']: row['count'] for row in rows}
+        # build a dict with all years in the range. 
+        yeardict = {year: 0 for year in range(year_begin, year_end + 1)}
+        for row in rows:
+            yeardict[row['_id']] = row['count']
         return yeardict
 
     def get_count_cumulative(self, year):

@@ -1,6 +1,6 @@
 import { DataGrid, type GridColDef, type GridRowSelectionModel, type GridToolbarProps, type ToolbarPropsOverrides } from '@mui/x-data-grid';
 import { useStateContext, type Article } from './App';
-import { mock_rows, ADS_URL } from './config'
+import { ADS_URL } from './config'
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import { Toolbar } from '@mui/x-data-grid';
@@ -113,17 +113,17 @@ export function EditToolbar(props: EditToolbarProps) {
 
 export const ArticleTable = () => {
     const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>();
+    const context = useStateContext()
+
     const selectedArticles = useMemo(() => {
         // Get the selected rows based on the rowSelectionModel
-        const sa = (mock_rows as unknown as Article[]).filter((row) =>
+        const sa = context?.articles?.filter((row) =>
             rowSelectionModel?.ids.has(row._id)
         );
-
         // Perform an action with the selected rows (e.g., log them)
         console.log('Selected Articles:', sa);
-        return sa;
+        return sa ?? [];
     }, [rowSelectionModel]);
-    const context = useStateContext()
 
     const cols = context?.isAdmin.current ? adminColumns : columns as GridColDef<Article>[]
 
@@ -149,7 +149,7 @@ export const ArticleTable = () => {
             rowSelectionModel={rowSelectionModel}
             checkboxSelection={true}
             disableMultipleRowSelection={false}
-            rows={mock_rows as unknown as Article[]}
+            rows={context?.articles}
             columns={cols}
         />
     );

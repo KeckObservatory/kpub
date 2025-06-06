@@ -158,8 +158,8 @@ export const PlotDisplay = (props: Props) => {
                     const key = `${countType}_counts`
                     console.log('Data by count:', data, key)
                     newTraces = [{
-                        x: data.cumulative_years,
-                        y: data[key],
+                        x: Object.keys(data.counts),
+                        y: Object.entries(data.counts),
                         type: 'line+scatter',
                         name: 'Paper Count',
                     }]

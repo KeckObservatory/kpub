@@ -576,7 +576,7 @@ class PublicationDB(MongoDBConnector):
         return default
 
     def get_annual_publication_count(self, year_begin=2009, year_end=datetime.datetime.now().year,
-                                     instrument=None):
+                                     instrumentList=None):
         """Returns a dict containing the number of publications per year per mission.
 
         Parameters
@@ -587,7 +587,7 @@ class PublicationDB(MongoDBConnector):
         year_end : int
             Year to end counting. (default: current year)
         """
-        yeardict = self.get_articles_by_years_instrument(year_begin, year_end, instrument)
+        yeardict = self.get_articles_by_years_instrument(year_begin, year_end, instrumentList)
         return yeardict 
 
     def get_annual_publication_count_cumulative(self, year_begin=2009, year_end=datetime.datetime.now().year):

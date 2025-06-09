@@ -121,16 +121,21 @@ export const PlotDisplay = (props: Props) => {
                     data = dt as unknown as PlotDataByYear
                     console.log('Data by year:', data)
                     const color = data.colors[0]
-                    newTraces = Object.entries(data.counts).map( ([year, count]: [string, unknown]) => {
-                        const trace = {
-                            x: Number(year),
-                            y: count,
+                    let x: number[] = []
+                    let y: number[] = []
+                    Object.entries(data.counts).forEach( ([year, count]: [string, unknown]) => {
+                        x.push(Number(year))
+                        y.push(count as number)
+                    })
+                    newTraces = [
+                        {
+                            x: x,
+                            y: y,
                             type: 'bar',
                             name: 'Keck',
                             marker: { color },
                         }
-                        return trace
-                    })
+                    ]
                     newLayout = {
                         title: { text: 'Data by Year' },
                         size: {

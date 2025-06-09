@@ -194,15 +194,15 @@ class MongoDBConnector:
         rows = list(self.collection.find(query, projection))
         return rows
 
-    def get_articles_by_years_instrument(self, year_begin, year_end, instrumentList=None):
+    def get_articles_by_years_instrument(self, year_begin, year_end, instrument=None):
         """Get articles by year range, and instrument."""
         query = {
             'year': {'$gte': year_begin, '$lte': year_end}
         }
-        if instrumentList:
+        if instrument:
         # Build a list of regex queries for each instrument (case-insensitive, substring match)
             # regex_list = [{'$regex': inst, '$options': 'i'} for inst in instrumentList]
-            # query['instruments'] = {'$elemMatch': {'$or': regex_list}}
+            query['instruments'] = {'$elemMatch': {'$in': instrument}}
             query['instruments'] = {'$in': instrumentList}
 
         pipeline = [

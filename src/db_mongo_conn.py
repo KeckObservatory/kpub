@@ -201,9 +201,7 @@ class MongoDBConnector:
         }
         if instrument:
         # Build a list of regex queries for each instrument (case-insensitive, substring match)
-            # regex_list = [{'$regex': inst, '$options': 'i'} for inst in instrumentList]
             query['instruments'] = {'$elemMatch': {'$in': instrument}}
-            query['instruments'] = {'$in': instrumentList}
 
         pipeline = [
             {'$match': query},

@@ -196,17 +196,18 @@ class MongoDBConnector:
 
     def get_articles_by_years_instrument(self, year_begin, year_end, instrument=None):
         """Get articles by year range, and instrument."""
-        query = {
-            'year': {'$gte': year_begin, '$lte': year_end}
-        }
+        pipeline = []
+        query = { 'year': {'$gte': year_begin, '$lte': year_end} }
+        group = {'_id': {'year': '$year'}, 'count': {'$sum': 1}}
         if instrument:
-        # Build a list of regex queries for each instrument (case-insensitive, substring match)
-            query['instruments'] = {'$elemMatch': {'$in': instrument}}
+            pipeline.append({'$unwind': '$instruments'})
+            query['instruments'] = {'instruments': instrument}
+            group['_id']['instrument'] = '$instruments'
+        pipeline.append({'$match': query})
 
-        pipeline = [
-            {'$match': query},
-            {'$group': {'_id': '$year', 'count': {'$sum': 1}}}
-        ]
+        sort = {'$sort': {'year': 1}}
+        pipeline.append({'$group': group})
+        pipeline.append(sort)
         rows = list(self.collection.aggregate(pipeline))
         # build a dict with all years in the range. 
         yeardict = {year: 0 for year in range(year_begin, year_end + 1)}

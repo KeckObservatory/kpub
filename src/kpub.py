@@ -694,7 +694,6 @@ class PublicationDB(MongoDBConnector):
         )
         key = self.config.get('ADS_API_KEY')
         headers = {'Authorization': f'Bearer {key}'}
-        pdb.set_trace()
         resp = requests.get(url, headers=headers)
         assert resp.status_code != 429, 'you have exceeded the number of times you can query ADS. Try again later'
         data = resp.json()

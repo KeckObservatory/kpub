@@ -131,11 +131,11 @@ export const PlotDisplay = (props: Props) => {
                         },
                         showlegend: true,
                         legend: {
-                            orientation: 'v',
+                            orientation: 'h',
                             xanchor: 'center',
                             yanchor: 'right',
                             x: 0.5,
-                            y: -0.2,
+                            y: -0.3,
                         },
                     }
                     break;
@@ -178,7 +178,7 @@ export const PlotDisplay = (props: Props) => {
                             xanchor: 'center',
                             yanchor: 'bottom',
                             x: 0.5,
-                            y: -0.2,
+                            y: -0.3,
                         },
                     }
                     break;
@@ -203,6 +203,13 @@ export const PlotDisplay = (props: Props) => {
                             title: { text: countType === 'first_author' ? 'First Author Count' : countType === 'author' ? 'Author Count' : 'Paper Count' },
                         },
                         showlegend: true,
+                        legend: {
+                            orientation: 'h',
+                            xanchor: 'center',
+                            yanchor: 'bottom',
+                            x: 0.5,
+                            y: -0.3,
+                        },
                     }
                     break;
             }

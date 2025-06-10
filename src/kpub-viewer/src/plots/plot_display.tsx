@@ -48,19 +48,19 @@ export const PlotDisplay = (props: Props) => {
     const plot_data = useMemo(async () => {
         switch (plotname) {
             case 'data_by_instrument':
-                const iresp = await fetch(`${apiURL}/get_plot?plotname=plot_by_instrument&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}`)
+                const iresp = await fetch(`${apiURL}/get_plot?plotname=plot_by_instrument&instruments=${instruments?.join('|') || ''}`)
                 const idata = await iresp.json() as PlotDataByInstrument
                 return idata
             case 'data_by_year':
-                const yresp = await fetch(`${apiURL}/get_plot?plotname=plot_by_year&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}`)
+                const yresp = await fetch(`${apiURL}/get_plot?plotname=plot_by_year&extrapolate=${extrapolate || false}`)
                 const ydata = await yresp.json() as PlotDataByYear
                 return ydata
             case 'data_by_count':
-                const cresp = await fetch(`${apiURL}/get_plot?plotname=plot_author_count&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}`)
+                const cresp = await fetch(`${apiURL}/get_plot?plotname=plot_author_count`)
                 const cdata = await cresp.json() as PlotDataByCount
                 return cdata
             default:
-                const dresp = await fetch(`${apiURL}/get_plot?plotname=plot_by_instrument&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}`)
+                const dresp = await fetch(`${apiURL}/get_plot?plotname=plot_by_instrument&instruments=${instruments?.join('|') || ''}`)
                 const ddata = await dresp.json() as PlotDataByInstrument
                 return ddata
         }
@@ -149,6 +149,10 @@ export const PlotDisplay = (props: Props) => {
                         x.push(Number(year))
                         y.push(count as number)
                     })
+                    if (extrapolate && data.expected) {
+                        y = y.slice(undefined, -1)
+                        y.push(data.expected)
+                    }
                     newTraces = [
                         {
                             x: x,
@@ -172,7 +176,7 @@ export const PlotDisplay = (props: Props) => {
                         yaxis: {
                             title: { text: 'Number of Papers' },
                         },
-                        showlegend: true,
+                        showlegend: false,
                         legend: {
                             orientation: 'h',
                             xanchor: 'center',

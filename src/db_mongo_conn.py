@@ -87,6 +87,7 @@ class MongoDBConnector:
             article['archive'] = archive
             article['affiliation'] = affiliation
             self.collection.insert_one(article)
+            #self.collection.replace_one({'_id': article['_id']}, article, upsert=True)
             log.info(f"Inserted {article['bibcode']}")
         except pymongo.errors.DuplicateKeyError:
             log.warning(f"{article['bibcode']} was already ingested.")

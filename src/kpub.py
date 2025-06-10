@@ -104,12 +104,13 @@ class PublicationDB(MongoDBConnector):
 
 
     @staticmethod
-    def get_affiliation(snippits):
-        # Get affiliation
+    def get_affiliation(snippits, mission):
+        # Does snippits contain instrument strings and the mission is 'keck'? 
+        # If so, then this is a Keck publication.
         affiliation = 'unknown' # default
-        if len(snippits) > 0 and 'keck' in snippits.keys():
+        if len(snippits) > 0 and 'keck' in mission:
             affiliation = 'keck' # pretty sure its keck
-        if len(snippits) == 0 and not 'keck' in snippits.keys():
+        if len(snippits) == 0 and not 'keck' in mission:
             affiliation = 'unrelated' # pretty sure its unrelated
         return affiliation
 
@@ -158,7 +159,8 @@ class PublicationDB(MongoDBConnector):
         if mission != 'unrelated':
             archive = self.get_archive_acknowledgement(article['bibcode'])
 
-        affiliation = self.get_affiliation(snippits)
+        # used for automation. Checks if this is a Keck publication.
+        affiliation = self.get_affiliation(snippits, mission)
 
         #add it
         self.add(article, mission=mission, snippits=snippits, instruments=instruments, archive=archive, affiliation=affiliation)
@@ -277,8 +279,6 @@ class PublicationDB(MongoDBConnector):
             if interactive and ('NONARTICLE' in article['property']):
                 # Note: data products are sometimes tagged as NONARTICLE
                 log.warning("{} is not an article.".format(article['bibcode']))
-            if self.article_exists(article):
-                log.warning("{} is already in the db.".format(article['bibcode']))
             else:
                 self.add_article(article, interactive=interactive)
 
@@ -634,18 +634,7 @@ class PublicationDB(MongoDBConnector):
         for query in queries:
             log.info(f"\nQuerying {query['name']} (date={month})")
             data = self.query_ads(query['query'], month)
-            tmp_articles = data.get('response', {}).get('docs', [])
-
-            #remove those already in our db
-            articles = []
-            for art in tmp_articles:
-                if self.article_exists(art): 
-                    log.info(f"SKIPPING {art['bibcode']} already in DB.")
-                    continue
-
-                # add additional filters
-                else: articles.append(art)
-
+            articles = data.get('response', {}).get('docs', [])
 
             #loop and add
             for idx, article in enumerate(articles):
@@ -705,6 +694,7 @@ class PublicationDB(MongoDBConnector):
         )
         key = self.config.get('ADS_API_KEY')
         headers = {'Authorization': f'Bearer {key}'}
+        pdb.set_trace()
         resp = requests.get(url, headers=headers)
         assert resp.status_code != 429, 'you have exceeded the number of times you can query ADS. Try again later'
         data = resp.json()
@@ -845,7 +835,7 @@ def get_pdf_file(bibcode, ads_api_key):
     #url = f'https://ui.adsabs.harvard.edu/link_gateway/{bibcode}/PUB_PDF'
     headers = {f'Authorization': f'Bearer {ads_api_key}'}
     resp = requests.get(url, headers=headers)
-    if resp.status_code != 200 or len(r.content) < 1000:
+    if resp.status_code != 200 or len(resp.content) < 1000:
         print("Could not download PDF file.")
         return False
     with open(outfile, 'wb') as f:
@@ -1191,6 +1181,3 @@ if __name__ == "__main__":
     elif cmd == 'stats':     kpub_stats()
     elif cmd == 'spreadsheet': kpub_spreadsheet(margs.filename)
     else: log.error("Unknown kpub command")
-
-    kpub_plot_data(args.plotname, args.instruments, args.year_begin, args.extrapolate)
-    kpub_export(args.monthyear, args.begin_year, args.filename, args.affiliation)

@@ -201,7 +201,7 @@ class MongoDBConnector:
         group = {'_id': {'year': '$year'}, 'count': {'$sum': 1}}
         if instrument:
             pipeline.append({'$unwind': '$instruments'})
-            query['instruments'] = {'instruments': instrument}
+            query['instruments'] = instrument
             group['_id']['instrument'] = '$instruments'
         pipeline.append({'$match': query})
 
@@ -212,7 +212,7 @@ class MongoDBConnector:
         # build a dict with all years in the range. 
         yeardict = {year: 0 for year in range(year_begin, year_end + 1)}
         for row in rows:
-            yeardict[row['_id']] = row['count']
+            yeardict[row['_id']['year']] = row['count']
         return yeardict
 
     def get_count_cumulative(self, year):

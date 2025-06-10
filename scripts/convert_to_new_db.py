@@ -33,6 +33,8 @@ def convert_to_new_db(input_db):
         date_modified = datetime.datetime.now()
         row = { **row, 'last_modifier': last_modifier, 'date_modified': date_modified, 'affiliation': affiliation }
         row['instruments'] = row['instruments'].split('|') if row.get('instruments') else []
+        row['year'] = int(row['year']) if row.get('year') else None
+        row['month'] = int(row['month'].split('-')[-1]) if row.get('month') else None
         # Remove the 'metrics' field as it's already merged into the row
         # Insert the row into the new database
         del row['metrics']

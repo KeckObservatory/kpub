@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import type { CountType, PlotNames } from './plot_control';
 
 interface PlotDataByInstrument {
-    years: string[],
+    years: number[],
     values: number[][],
     columns: string[],
     color: string[]
@@ -64,7 +64,7 @@ export const PlotDisplay = (props: Props) => {
                 const ddata = await dresp.json() as PlotDataByInstrument
                 return ddata
         }
-    }, [plotname, start_year, instruments, extrapolate])
+    }, [plotname, extrapolate])
 
     useEffect(() => {
 
@@ -82,15 +82,42 @@ export const PlotDisplay = (props: Props) => {
             switch (plotname) {
                 case 'data_by_instrument':
                     data = dt as unknown as PlotDataByInstrument
+
+                    //start year
+                    data.years = data.years.map((year: string) => {
+                        if (year < start_year) {
+                            return start_year
+                        }
+                        return year
+                    })
+
+                    let indexes: number[] = []
+                    data.columns.foreach((col: string, idx: number) => {
+                        if (instruments?.includes(col)) {
+                            indexes.push(idx)
+                        }
+                    })
+                    const columns = data.columns.filter((_col: string, idx: number) => {
+                        return (idx in indexes) 
+                    })
+                    const years = data.years.filter((_col: string, idx: number) => {
+                        return (idx in indexes) 
+                    })
+                    const values = data.values.filter((_col: string, idx: number) => {
+                        return (idx in indexes) 
+                    })
+                    const colors = data.color.filter((_col: string, idx: number) => {
+                        return (idx in indexes) 
+                    })
                     console.log('Data by instrument:', data)
-                    newTraces = data.values.map((value: number, index: number) => {
+                    newTraces = values.map((value: number, index: number) => {
                         return {
-                            x: data.years,
+                            x: years,
                             y: value,
                             type: 'line+scatter',
-                            name: data.columns[index],
-                            marker: { color: data.color[index] },
-                            line: { width: 2, shape: 'spline', color: data.color[index] },
+                            name: columns[index],
+                            marker: { color: colors[index] },
+                            line: { width: 2, shape: 'spline', color: colors[index] },
                             mode: 'lines+markers',
                         }
                     })
@@ -108,13 +135,13 @@ export const PlotDisplay = (props: Props) => {
                             title: { text: 'Number of Papers' },
                         },
                         showlegend: true,
-                        // legend: {
-                        //     orientation: 'h',
-                        //     xanchor: 'center',
-                        //     yanchor: 'bottom',
-                        //     x: 0.5,
-                        //     y: -0.2,
-                        // },
+                        legend: {
+                            orientation: 'h',
+                            xanchor: 'center',
+                            yanchor: 'bottom',
+                            x: 0.5,
+                            y: -0.2,
+                        },
                     }
                     break;
                 case 'data_by_year':
@@ -186,7 +213,7 @@ export const PlotDisplay = (props: Props) => {
             setLayout(newLayout)
         }
         fetchData()
-    }, [plot_data, countType])
+    }, [plot_data, countType, instruments, start_year, extrapolate])
 
     return (
         <Plot

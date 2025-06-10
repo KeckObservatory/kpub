@@ -160,7 +160,7 @@ const PlotControl = () => {
             )}
             <PlotDisplay
                 plotname={plotName}
-                start_year={startYear}
+                year_begin={startYear}
                 instruments={typeof instruments === 'string' ? [instruments as string] : instruments}
                 extrapolate={extrapolate}
                 countType={countType}

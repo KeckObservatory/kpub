@@ -29,7 +29,7 @@ interface PlotDataByYear {
 
 interface Props {
     plotname: PlotNames,
-    start_year?: number,
+    year_begin?: number,
     instruments?: string[],
     extrapolate?: boolean,
     countType?: CountType
@@ -37,7 +37,7 @@ interface Props {
 
 export const PlotDisplay = (props: Props) => {
 
-    const { plotname, start_year, instruments, extrapolate, countType } = props
+    const { plotname, year_begin, instruments, extrapolate, countType } = props
     const [traces, setTraces] = useState<any>([])
     const [layout, setLayout] = useState<any>({})
 
@@ -48,19 +48,19 @@ export const PlotDisplay = (props: Props) => {
     const plot_data = useMemo(async () => {
         switch (plotname) {
             case 'data_by_instrument':
-                const iresp = await fetch(`${apiURL}/get_plot?plotname=plot_by_instrument&start_year=${start_year || 2000}&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}`)
+                const iresp = await fetch(`${apiURL}/get_plot?plotname=plot_by_instrument&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}`)
                 const idata = await iresp.json() as PlotDataByInstrument
                 return idata
             case 'data_by_year':
-                const yresp = await fetch(`${apiURL}/get_plot?plotname=plot_by_year&start_year=${start_year || 2000}&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}`)
+                const yresp = await fetch(`${apiURL}/get_plot?plotname=plot_by_year&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}`)
                 const ydata = await yresp.json() as PlotDataByYear
                 return ydata
             case 'data_by_count':
-                const cresp = await fetch(`${apiURL}/get_plot?plotname=plot_author_count&start_year=${start_year || 2000}&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}`)
+                const cresp = await fetch(`${apiURL}/get_plot?plotname=plot_author_count&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}`)
                 const cdata = await cresp.json() as PlotDataByCount
                 return cdata
             default:
-                const dresp = await fetch(`${apiURL}/get_plot?plotname=plot_by_instrument&start_year=${start_year || 2000}&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}`)
+                const dresp = await fetch(`${apiURL}/get_plot?plotname=plot_by_instrument&instruments=${instruments?.join('|') || ''}&extrapolate=${extrapolate || false}`)
                 const ddata = await dresp.json() as PlotDataByInstrument
                 return ddata
         }
@@ -123,15 +123,17 @@ export const PlotDisplay = (props: Props) => {
                         xaxis: {
                             title: { text: 'Year' },
                             tickvals: data.years,
+                            range: [year_begin, data.years[data.years.length - 1]],
+                            
                         },
                         yaxis: {
                             title: { text: 'Number of Papers' },
                         },
                         showlegend: true,
                         legend: {
-                            orientation: 'h',
+                            orientation: 'v',
                             xanchor: 'center',
-                            yanchor: 'bottom',
+                            yanchor: 'right',
                             x: 0.5,
                             y: -0.2,
                         },
@@ -164,6 +166,8 @@ export const PlotDisplay = (props: Props) => {
                         },
                         xaxis: {
                             title: { text: 'Year' },
+                            tickvals: x,
+                            range: [year_begin, x[x.length - 1]],
                         },
                         yaxis: {
                             title: { text: 'Number of Papers' },
@@ -192,6 +196,8 @@ export const PlotDisplay = (props: Props) => {
                         title: { text: key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') },
                         xaxis: {
                             title: { text: 'Year' },
+                            tickvals: data.cumulative_years,
+                            range: [year_begin, data.cumulative_years[data.cumulative_years.length - 1]],
                         },
                         yaxis: {
                             title: { text: countType === 'first_author' ? 'First Author Count' : countType === 'author' ? 'Author Count' : 'Paper Count' },
@@ -206,7 +212,7 @@ export const PlotDisplay = (props: Props) => {
             setLayout(newLayout)
         }
         fetchData()
-    }, [plot_data, countType, instruments, start_year, extrapolate])
+    }, [plot_data, countType, instruments, year_begin, extrapolate])
 
     return (
         <Plot

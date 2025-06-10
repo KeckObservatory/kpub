@@ -267,13 +267,11 @@ def get_plot_author_count_data(db, year_begin):
     cumulative_first_author_counts = []
     first_author_counts = 0
     metricsData = db.get_metrics_data(year_begin, current_year)
-    for year in range(year_begin, current_year + 1):
-        cumulative_years.append(year)
-        for metricsYear in metricsData:
-            if year < metricsYear['_id']:
-                paper_counts += metricsYear['paper_count']
-                author_counts += metricsYear['author_count']
-                first_author_counts += metricsYear['first_author_count']
+    for metricsYear in metricsData:
+        paper_counts += metricsYear['paper_count']
+        author_counts += metricsYear['author_count']
+        first_author_counts += metricsYear['first_author_count']
+        cumulative_years.append(metricsYear['_id'])
         cumulative_paper_counts.append(paper_counts)
         cumulative_author_counts.append(author_counts)
         cumulative_first_author_counts.append(first_author_counts)

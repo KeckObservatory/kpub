@@ -206,7 +206,7 @@ export const PlotDisplay = (props: Props) => {
                         yaxis: {
                             title: { text: countType === 'first_author' ? 'First Author Count' : countType === 'author' ? 'Author Count' : 'Paper Count' },
                         },
-                        showlegend: true,
+                        showlegend: false,
                         legend: {
                             orientation: 'h',
                             xanchor: 'center',

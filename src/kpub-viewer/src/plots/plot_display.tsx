@@ -107,10 +107,9 @@ export const PlotDisplay = (props: Props) => {
                         return {
                             x: years,
                             y: value,
-                            type: 'line+scatter',
                             name: columns[index],
                             marker: { color: colors[index] },
-                            line: { width: 2, shape: 'spline', color: colors[index] },
+                            line: { width: 2, color: colors[index] },
                             mode: 'lines+markers',
                         }
                     })

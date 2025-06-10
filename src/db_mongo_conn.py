@@ -127,33 +127,34 @@ class MongoDBConnector:
             query).sort('date', pymongo.DESCENDING))
         return rows
 
-    def get_metadata(self, bibcode):
-        """Retrieve the raw metadata for a given bibcode."""
-        document = self.collection.find_one(
-            {'bibcode': bibcode}, {'_id': 0, 'metrics': 1})
-        return document['metrics'] if document else None
+    def get_metrics_data(self, year_begin, year_end):
 
-    def get_snippits(self, bibcode):
-        """Retrieve the snippits for a given bibcode."""
-        document = self.collection.find_one(
-            {'bibcode': bibcode}, {'_id': 0, 'snippits': 1})
-        return document['snippits'] if document else None
+        match = {'$match': 
+                   { 'year': {'$gte': year_begin, '$lte': year_end}, 
+                    'affiliation': 'keck' }
+                }
+        unwind = {'$unwind': '$author_norm'}
+        group = {'$group': 
+                  {'_id': '$year', 
+                   'author_count': {'$sum': 1}, 
+                   'author_set': {'$addToSet': '$author_norm'}, 
+                   'first_author_set': {'$addToSet': '$first_author_norm'}, 
+                   'bibcodes': {'$addToSet': '$bibcode'}}}
+        project = {'$project': 
+                    {'paper_count': {'$size': '$bibcodes'}, 
+                     'author_count': {'$size': '$author_set'}, 
+                     'first_author_count': {'$size': '$first_author_set' }, 
+                     '_id': 1, 
+                     'count': 1}}
+        sort = {'$sort': {'_id': 1}}
+        pipeline = [ match, unwind, group, project, sort ]
+
+        result = list(self.collection.aggregate(pipeline))
+        return result
 
     def article_exists(self, article):
         """Check if an article exists in the collection."""
         return self.collection.count_documents({'$or': [{'id': article['id']}, {'bibcode': article['bibcode']}]}) > 0
-
-    def select_for_export(self, archive=None):
-        """Select documents for export."""
-        query = {'mission': {'$ne': 'unrelated'}}
-        if archive:
-            query['archive'] = True
-
-        projection = {'bibcode': 1, 'mission': 1, 'instruments': 1, 'archive': 1,
-                      'affiliation': 1, 'date_modified': 1, 'last_modifier': 1, '_id': 0}
-        rows = list(self.collection.find(query, projection).sort(
-            'bibcode', pymongo.ASCENDING))
-        return rows
 
     def get_articles(self, begin_year=None, end_year=None, month=None, affiliation=None):
         """Get articles from the collection."""

@@ -260,20 +260,29 @@ def get_plot_author_count_data(db, year_begin):
 
 
     cumulative_years = []
-    paper_counts = []
-    author_counts = []
-    first_author_counts = []
-    for year in range(year_begin - 1, current_year + 1):
+    cumulative_paper_counts = []
+    paper_counts = 0
+    cumulative_author_counts = []
+    author_counts = 0
+    cumulative_first_author_counts = []
+    first_author_counts = 0
+    metricsData = db.get_metrics_data(year_begin, current_year)
+    for year in range(year_begin, current_year + 1):
         cumulative_years.append(year)
-        metrics = db.get_metrics(cumulative_years)
-        paper_counts.append(metrics['publication_count'])
-        author_counts.append(metrics['author_count'])
-        first_author_counts.append(metrics['first_author_count'])
+        for metricsYear in metricsData:
+            if year < metricsYear['_id']:
+                paper_counts += metricsYear['paper_count']
+                author_counts += metricsYear['author_count']
+                first_author_counts += metricsYear['first_author_count']
+        cumulative_paper_counts.append(paper_counts)
+        cumulative_author_counts.append(author_counts)
+        cumulative_first_author_counts.append(first_author_counts)
+
     return {
         'cumulative_years': cumulative_years,
-        'paper_counts': paper_counts,
-        'author_counts': author_counts,
-        'first_author_counts': first_author_counts
+        'paper_counts': cumulative_paper_counts,
+        'author_counts': cumulative_author_counts,
+        'first_author_counts': cumulative_first_author_counts
     }
 
 def plot_author_count(db,

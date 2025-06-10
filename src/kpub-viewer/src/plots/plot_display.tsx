@@ -76,41 +76,34 @@ export const PlotDisplay = (props: Props) => {
             }
 
             console.log('Plot data:', dt)
-            let data: any
+            let data: any 
             let newLayout: any = {}
             let newTraces: any = []
             switch (plotname) {
                 case 'data_by_instrument':
-                    data = dt as unknown as PlotDataByInstrument
+                    data = dt as PlotDataByInstrument
 
-                    //start year
-                    data.years = data.years.map((year: string) => {
-                        if (year < start_year) {
-                            return start_year
-                        }
-                        return year
-                    })
+                    let indexes: number[] = [];
 
-                    let indexes: number[] = []
-                    data.columns.foreach((col: string, idx: number) => {
+                    (data as PlotDataByInstrument).columns.forEach((col: string, idx: number) => {
                         if (instruments?.includes(col)) {
-                            indexes.push(idx)
+                            indexes.push(idx);
                         }
-                    })
-                    const columns = data.columns.filter((_col: string, idx: number) => {
-                        return (idx in indexes) 
-                    })
-                    const years = data.years.filter((_col: string, idx: number) => {
-                        return (idx in indexes) 
-                    })
-                    const values = data.values.filter((_col: string, idx: number) => {
-                        return (idx in indexes) 
-                    })
-                    const colors = data.color.filter((_col: string, idx: number) => {
-                        return (idx in indexes) 
-                    })
+                    });
+                    const columns = (data as PlotDataByInstrument).columns.filter((_col: string, idx: number) => {
+                        return indexes.includes(idx);
+                    });
+                    // Use all years, since years is a 1D array for all columns
+                    const years = (data as PlotDataByInstrument).years;
+                    // Filter values and colors by indexes
+                    const values = (data as PlotDataByInstrument).values.filter((_col: number[], idx: number) => {
+                        return indexes.includes(idx);
+                    });
+                    const colors = (data as PlotDataByInstrument).color.filter((_col: string, idx: number) => {
+                        return indexes.includes(idx);
+                    });
                     console.log('Data by instrument:', data)
-                    newTraces = values.map((value: number, index: number) => {
+                    newTraces = values.map((value: number[], index: number) => {
                         return {
                             x: years,
                             y: value,
@@ -121,6 +114,7 @@ export const PlotDisplay = (props: Props) => {
                             mode: 'lines+markers',
                         }
                     })
+
                     newLayout = {
                         title: { text: 'Data by Instrument' },
                         size: {
@@ -190,8 +184,8 @@ export const PlotDisplay = (props: Props) => {
                     const key = `${countType}_counts`
                     console.log('Data by count:', data, key)
                     newTraces = [{
-                        x: Object.keys(data.counts),
-                        y: Object.entries(data.counts),
+                        x: data.cumulative_years,
+                        y: data[key],
                         type: 'line+scatter',
                         name: 'Paper Count',
                     }]

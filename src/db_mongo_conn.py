@@ -101,6 +101,7 @@ class MongoDBConnector:
                 'affiliation': article['affiliation']
             }})
             log.info(f"Updated {article['bibcode']}")
+            return article
         except Exception as e:
             log.error(f"Error updating {article['bibcode']}: {e}")
 

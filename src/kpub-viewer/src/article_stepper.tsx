@@ -30,7 +30,7 @@ export const ArticleStepper = (props: ArticleStepperProps) => {
         console.log('activeStep:', activeStep)
         console.log('Article to be updated:', selectedArticles[activeStep]);
 
-        const resp = await fetch(`${apiURL}/update_affiliation}`, {
+        const resp = await fetch(`${apiURL}/update_affiliation`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

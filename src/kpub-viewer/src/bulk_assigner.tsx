@@ -55,7 +55,7 @@ export const BulkAssigner = (props: BulkAssignerProps) => {
         // Perform the save operation here
         console.log('Selected Option:', selectedOption);
 
-        const resp = await fetch(`${apiURL}/update_affiliation}`, {
+        const resp = await fetch(`${apiURL}/update_affiliation`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

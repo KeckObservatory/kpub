@@ -261,6 +261,7 @@ class PublicationDB(MongoDBConnector):
             article['last_modifier'] = modifier
             # Save the changes to the database
             self.update_row_affiliation(article)
+        return articles
 
 
     def add_by_bibcode(self, bibcode, interactive=False):
@@ -1008,8 +1009,9 @@ def kpub_set_affiliation(articles, affiliation):
 
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
     db = PublicationDB(config)
-    db.set_affiliation(articles, affiliation)
+    articles = db.set_affiliation(articles, affiliation)
     log.info('Set affiliation for {} articles to {}'.format(len(articles), affiliation))
+    return articles
     
 
 def kpub_export(monthyear, begin_year=None, filename=None, affiliation=None):

@@ -253,13 +253,13 @@ class PublicationDB(MongoDBConnector):
         val = "1" if len(counts) > 0 else "0"
         return val
 
-    def set_affiliation(self, articles, affiliation, modifier='kpub'):
+    def set_affiliation(self, articles, affiliation, last_modifier='kpub'):
         updated_articles = []
         for article in articles:
             # Get the bibcode
             article['date_modified'] = datetime.datetime.now()
             article['affiliation'] = affiliation
-            article['last_modifier'] = modifier
+            article['last_modifier'] = last_modifier
             # Save the changes to the database
             updated_article = self.update_row_affiliation(article)
             if updated_article:
@@ -1009,11 +1009,11 @@ def kpub_import(jsonfile):
           "\nREMINDER: Do a `kpub push` to update the data files in github!" +
           HIGHLIGHTS['END'])
 
-def kpub_set_affiliation(articles, affiliation):
+def kpub_set_affiliation(articles, affiliation, last_modifier):
 
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
     db = PublicationDB(config)
-    articles = db.set_affiliation(articles, affiliation)
+    articles = db.set_affiliation(articles, affiliation, last_modifier)
     log.info('Set affiliation for {} articles to {}'.format(len(articles), affiliation))
     return articles
     

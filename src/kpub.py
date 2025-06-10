@@ -254,14 +254,18 @@ class PublicationDB(MongoDBConnector):
         return val
 
     def set_affiliation(self, articles, affiliation, modifier='kpub'):
+        updated_articles = []
         for article in articles:
             # Get the bibcode
             article['date_modified'] = datetime.datetime.now()
             article['affiliation'] = affiliation
             article['last_modifier'] = modifier
             # Save the changes to the database
-            self.update_row_affiliation(article)
-        return articles
+            updated_article = self.update_row_affiliation(article)
+            if updated_article:
+                updated_articles.append(updated_article)
+
+        return updated_articles 
 
 
     def add_by_bibcode(self, bibcode, interactive=False):

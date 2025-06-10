@@ -14,7 +14,7 @@ interface EditToolbarProps extends GridToolbarProps, ToolbarPropsOverrides {
     selectedArticles: Article[];
 }
 
-const ads_link = (x:string) => `${ADS_URL}/abs/${x}/abstract`
+export const ads_link = (x:string) => `${ADS_URL}/abs/${x}/abstract`
 
 export const columns: GridColDef<Article>[]  = [
     { field: 'title', headerName: 'TITLE', width: 300 },

@@ -72,6 +72,7 @@ export const BulkAssigner = (props: BulkAssignerProps) => {
             context?.setArticles(context.articles.map((article) => {
                 respBody.updated_articles.forEach((updatedArticle: Article) => {
                     if (article._id === updatedArticle._id) {
+                        console.log('updating row:', updatedArticle)
                         return updatedArticle
                     }
                 });

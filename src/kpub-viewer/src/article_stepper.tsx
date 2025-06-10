@@ -15,6 +15,7 @@ import Button from '@mui/material/Button';
 import { useStateContext, type Article } from './App';
 import { apiURL, INSTRUMENTS } from './config';
 import Highlighter from 'react-highlight-words';
+import { ads_link } from './article_table';
 
 interface ArticleStepperProps extends BulkAssignerProps { }
 
@@ -47,6 +48,7 @@ export const ArticleStepper = (props: ArticleStepperProps) => {
             context?.setArticles(context.articles.map((article) => {
                 respBody.updated_articles.forEach((updatedArticle: Article) => {
                     if (article._id === updatedArticle._id) {
+                        console.log('updating row:', updatedArticle)
                         return updatedArticle
                     }
                 });
@@ -75,7 +77,10 @@ export const ArticleStepper = (props: ArticleStepperProps) => {
                         ) : null
                     }
                 >
-                    {article.title.at(0)}
+                    <>
+                        {article.title.at(0)}
+                        <a href={ads_link(article.bibcode)} target="_blank" rel="noopener noreferrer">{article.bibcode}</a>
+                    </>
                 </StepLabel>
                 <StepContent>
                     <Box sx={{ mb: 2 }}>
@@ -94,7 +99,7 @@ export const ArticleStepper = (props: ArticleStepperProps) => {
                                                     searchWords={INSTRUMENTS}
                                                     autoEscape={true}
                                                     textToHighlight={snippet}
-                                                    />
+                                                />
                                             )
                                         })}
                                     </Stack>

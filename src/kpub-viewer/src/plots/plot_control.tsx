@@ -134,7 +134,7 @@ const PlotControl = () => {
                         openTo="year"
                         views={['year']}
                         maxDate={dayjs(new Date())}
-                        minDate={dayjs('2000-01-01')}
+                        minDate={dayjs('1990-01-01')}
                         value={dayjs(`${startYear}-01-01`)}
                         onChange={(newValue) => {
                             console.log('newValue:', newValue)

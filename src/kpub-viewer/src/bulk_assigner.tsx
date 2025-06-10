@@ -67,12 +67,14 @@ export const BulkAssigner = (props: BulkAssignerProps) => {
         })
 
         if (resp.ok) {
-            const updatedArticle = await resp.json()
-            console.log('Updated article:', updatedArticle)
+            const respBody = await resp.json()
+            console.log('Updated article:', respBody)
             context?.setArticles(context.articles.map((article) => {
-                if (article._id === updatedArticle._id) {
-                    return updatedArticle
-                }
+                respBody.updated_articles.forEach((updatedArticle: Article) => {
+                    if (article._id === updatedArticle._id) {
+                        return updatedArticle
+                    }
+                });
                 return article
             }))
         }

@@ -12,7 +12,7 @@ import { type BulkAssignerProps, AffiliationButtonGroup } from './bulk_assigner'
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
-import { useStateContext } from './App';
+import { useStateContext, type Article } from './App';
 import { apiURL, INSTRUMENTS } from './config';
 import Highlighter from 'react-highlight-words';
 
@@ -42,12 +42,14 @@ export const ArticleStepper = (props: ArticleStepperProps) => {
         })
 
         if (resp.ok) {
-            const updatedArticle = await resp.json()
-            console.log('Updated article:', updatedArticle)
+            const respBody = await resp.json()
+            console.log('Updated article:', respBody)
             context?.setArticles(context.articles.map((article) => {
-                if (article._id === updatedArticle._id) {
-                    return updatedArticle
-                }
+                respBody.updated_articles.forEach((updatedArticle: Article) => {
+                    if (article._id === updatedArticle._id) {
+                        return updatedArticle
+                    }
+                });
                 return article
             }))
         }

@@ -85,7 +85,7 @@ export const ArticleStepper = (props: ArticleStepperProps) => {
                 <StepContent>
                     <Box sx={{ mb: 2 }}>
                         <Stack>
-                            {Object.entries(article.snippits).map((keysnip, idx) => {
+                            {Object.entries(article.snippits ?? []).map((keysnip, idx) => {
                                 const [key, value] = keysnip;
                                 return (
                                     <Stack>

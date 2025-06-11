@@ -69,15 +69,16 @@ export const BulkAssigner = (props: BulkAssignerProps) => {
         if (resp.ok) {
             const respBody = await resp.json()
             console.log('Updated article:', respBody)
-            context?.setArticles(context.articles.map((article) => {
-                respBody.updated_articles.forEach((updatedArticle: Article) => {
-                    if (article._id === updatedArticle._id) {
-                        console.log('updating row:', updatedArticle)
-                        return updatedArticle
+            if (context !== null) {
+                var newArticles = [...context.articles]
+                respBody.updated_articles.forEach((article: Article) => {
+                    const idx = context?.articles.findIndex((a) => a._id === article._id)
+                    if (idx > -1) {
+                        newArticles.splice(idx, 1, article)
                     }
-                });
-                return article
-            }))
+                })
+                context?.setArticles(newArticles)
+            }
         }
         handleClose();
     }

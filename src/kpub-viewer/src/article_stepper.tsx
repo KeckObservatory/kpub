@@ -58,6 +58,8 @@ export const ArticleStepper = (props: ArticleStepperProps) => {
         }
     }
 
+    
+
     const handleNext = () => {
         //TODO: update the selected articles with the selected option
         setActiveStep((prevActiveStep) => prevActiveStep + 1);

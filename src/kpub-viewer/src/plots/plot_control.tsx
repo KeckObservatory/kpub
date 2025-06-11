@@ -103,7 +103,7 @@ const InstrumentsMultipleSelect = (props: InstrumentsMultipleSelectProps) => {
 
 const PlotControl = () => {
     const [countType, setCountType] = useState<CountType>("author")
-    const [startYear, setStartYear] = useState<number | undefined>(2009)
+    const [startYear, setStartYear] = useState<number | undefined>(1994)
     const [instruments, setInstruments] = useState<string[]>(INSTRUMENTS)
     const [extrapolate, setExtrapolate] = useState(false)
     const [plotName, setPlotName] = useState<PlotNames>("data_by_instrument")

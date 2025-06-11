@@ -122,7 +122,7 @@ export const ArticleTable = (props: Props ) => {
 
     const selectedArticles = useMemo(() => {
         // Get the selected rows based on the rowSelectionModel
-        const sa = articles.filter((row) =>
+        const sa = (articles ?? []).filter((row) =>
             rowSelectionModel?.ids.has(row._id)
         );
         // Perform an action with the selected rows (e.g., log them)
@@ -156,7 +156,7 @@ export const ArticleTable = (props: Props ) => {
             rowSelectionModel={rowSelectionModel}
             checkboxSelection={true}
             disableMultipleRowSelection={false}
-            rows={articles}
+            rows={articles ?? []}
             columns={cols}
         />
     );

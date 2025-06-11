@@ -26,6 +26,7 @@ def convert_to_new_db(input_db):
 
     affiliation = 'keck' 
     last_modifier = 'kpub (affiliation set by old db)'
+    addingRows = []
     for row in df.to_dict(orient='records'):
         bibcode = row['bibcode']
         metrics = json.loads(row['metrics'])
@@ -33,6 +34,9 @@ def convert_to_new_db(input_db):
         date_modified = datetime.datetime.now()
         row = { **row, 'last_modifier': last_modifier, 'date_modified': date_modified, 'affiliation': affiliation }
         row['instruments'] = row['instruments'].split('|') if row.get('instruments') else []
+        # if len(row['instruments']) < 1 and not row['archive']==1:
+        #     print(f"{bibcode} does not mention any instruments or KOA. skipping")
+        #     continue
         row['year'] = int(row['year']) if row.get('year') else None
         row['month'] = int(row['month'].split('-')[-1]) if row.get('month') else None
         # Remove the 'metrics' field as it's already merged into the row
@@ -42,13 +46,15 @@ def convert_to_new_db(input_db):
         row['_id'] = bibcode
         # Insert the row into the new database
 
-        resp = db.collection.replace_one({'_id': bibcode}, row, upsert=True)
-        if resp.matched_count == 0:
-            print(f"Bibcode {bibcode} was not found in the new database, it has been inserted.")
-            continue
-        if resp.modified_count == 0:
-            print(f"Bibcode {bibcode} was already set to {affiliation} in the new database, skipping...")
-            continue
+        # resp = db.collection.replace_one({'_id': bibcode}, row, upsert=True)
+        # if resp.matched_count == 0:
+        #     print(f"Bibcode {bibcode} was not found in the new database, it has been inserted.")
+        #     continue
+        # if resp.modified_count == 0:
+        #     print(f"Bibcode {bibcode} was already set to {affiliation} in the new database, skipping...")
+        #     continue
+        addingRows.append(row)
+    db.collection.insert_many(addingRows)
 
 
 if __name__ == "__main__":

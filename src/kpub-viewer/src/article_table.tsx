@@ -1,5 +1,5 @@
 import { DataGrid, type GridColDef, type GridRowSelectionModel, type GridToolbarProps, type ToolbarPropsOverrides } from '@mui/x-data-grid';
-import { useStateContext, type Article } from './App';
+import { type Article } from './App';
 import { ADS_URL } from './config'
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
@@ -12,6 +12,7 @@ import { MonthYearPicker } from './monthyear_picker';
 
 interface EditToolbarProps extends GridToolbarProps, ToolbarPropsOverrides {
     selectedArticles: Article[];
+    isAdmin: boolean | null;
 }
 
 export const ads_link = (x:string) => `${ADS_URL}/abs/${x}/abstract`
@@ -43,7 +44,6 @@ export function EditToolbar(props: EditToolbarProps) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isStepperOpen, setIsStepperOpen] = useState(false);
     const [_, setIsPlotOpen] = useState(false);
-    const context = useStateContext()
 
     const openDialog = (type: string) => {
         if (type === 'bulk') {
@@ -86,7 +86,7 @@ export function EditToolbar(props: EditToolbarProps) {
         <Toolbar style={{padding: '5px', marginTop: '20px', marginBottom: '20px' }}> 
             <Stack sx={{marginBottom: '20px'}}direction="row" spacing={5}>
                 <MonthYearPicker />
-                {context?.isAdmin.current && (
+                {props.isAdmin && (
                     <>
                         <Button color="primary" onClick={() => openDialog('bulk')} variant="contained">
                             Change Affiliation of Selected Articles
@@ -111,13 +111,18 @@ export function EditToolbar(props: EditToolbarProps) {
     );
 }
 
-export const ArticleTable = () => {
+interface Props {
+    articles: Article[];
+    isAdmin: boolean | null;
+}
+
+export const ArticleTable = (props: Props ) => {
+    const { articles, isAdmin } = props;
     const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>();
-    const context = useStateContext()
 
     const selectedArticles = useMemo(() => {
         // Get the selected rows based on the rowSelectionModel
-        const sa = context?.articles?.filter((row) =>
+        const sa = articles.filter((row) =>
             rowSelectionModel?.ids.has(row._id)
         );
         // Perform an action with the selected rows (e.g., log them)
@@ -125,7 +130,8 @@ export const ArticleTable = () => {
         return sa ?? [];
     }, [rowSelectionModel]);
 
-    const cols = context?.isAdmin.current ? adminColumns : columns as GridColDef<Article>[]
+
+    const cols = isAdmin ? adminColumns : columns as GridColDef<Article>[]
 
     return (
         <DataGrid
@@ -138,7 +144,8 @@ export const ArticleTable = () => {
             }
             slotProps={{
                 toolbar: {
-                    selectedArticles: selectedArticles
+                    selectedArticles: selectedArticles,
+                    isAdmin: isAdmin
                 } as EditToolbarProps,
             }}
             showToolbar
@@ -149,7 +156,7 @@ export const ArticleTable = () => {
             rowSelectionModel={rowSelectionModel}
             checkboxSelection={true}
             disableMultipleRowSelection={false}
-            rows={context?.articles}
+            rows={articles}
             columns={cols}
         />
     );

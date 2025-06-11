@@ -156,7 +156,7 @@ function App() {
               width: '100%',
             }}
           >
-            <ArticleTable />
+            <ArticleTable articles={state.articles} isAdmin={isAdmin.current}/>
           </Box>
         </StateContext.Provider>
       </ThemeProvider>

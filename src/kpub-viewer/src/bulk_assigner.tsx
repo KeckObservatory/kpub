@@ -62,7 +62,7 @@ export const BulkAssigner = (props: BulkAssignerProps) => {
             },
             body: JSON.stringify({
                 affiliation: selectedOption,
-                articles: [selectedArticles],
+                articles: selectedArticles,
             }),
         })
 

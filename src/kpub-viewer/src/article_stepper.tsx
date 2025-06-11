@@ -45,7 +45,7 @@ export const ArticleStepper = (props: ArticleStepperProps) => {
         if (resp.ok) {
             const respBody = await resp.json()
             console.log('Updated article:', respBody)
-            context?.setArticles(context.articles.map((article) => {
+            const newArticles = context?.articles.map((article) => {
                 respBody.updated_articles.forEach((updatedArticle: Article) => {
                     if (article._id === updatedArticle._id) {
                         console.log('updating row:', updatedArticle)
@@ -53,7 +53,11 @@ export const ArticleStepper = (props: ArticleStepperProps) => {
                     }
                 });
                 return article
-            }))
+            }) ?? []
+
+            console.log('setting articles in context:', newArticles)
+
+            context?.setArticles(newArticles)
         }
     }
 

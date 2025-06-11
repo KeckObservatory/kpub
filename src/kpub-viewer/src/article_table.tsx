@@ -131,7 +131,6 @@ export const ArticleTable = (props: Props ) => {
         return sa ?? [];
     }, [rowSelectionModel]);
 
-
     useEffect(() => {
         // Log the articles whenever they change
         console.log('Articles updated:', articles);

@@ -46,13 +46,14 @@ export const ArticleStepper = (props: ArticleStepperProps) => {
             const respBody = await resp.json()
             console.log('Updated article:', respBody)
             const newArticles = context?.articles.map((article) => {
+                let returnArticle = { ...article }
                 respBody.updated_articles.forEach((updatedArticle: Article) => {
                     if (article._id === updatedArticle._id) {
                         console.log('updating row:', updatedArticle)
-                        return updatedArticle
+                        returnArticle = updatedArticle 
                     }
                 });
-                return article
+                return returnArticle 
             }) ?? []
 
             console.log('setting articles in context:', newArticles)

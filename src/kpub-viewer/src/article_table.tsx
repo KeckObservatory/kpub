@@ -4,7 +4,7 @@ import { ADS_URL } from './config'
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import { Toolbar } from '@mui/x-data-grid';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArticleStepper } from './article_stepper';
 import { BulkAssigner } from './bulk_assigner';
 import { MonthYearPicker } from './monthyear_picker';
@@ -55,6 +55,7 @@ export function EditToolbar(props: EditToolbarProps) {
             handleOpenPlot()
         }
     }
+
 
     const handleOpenPlot = () => {
         setIsDialogOpen(false);
@@ -131,6 +132,11 @@ export const ArticleTable = (props: Props ) => {
     }, [rowSelectionModel]);
 
 
+    useEffect(() => {
+        // Log the articles whenever they change
+        console.log('Articles updated:', articles);
+        // Reset the row selection model when articles change
+    }, [articles]);
     const cols = isAdmin ? adminColumns : columns as GridColDef<Article>[]
 
     return (

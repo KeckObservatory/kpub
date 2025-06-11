@@ -45,31 +45,16 @@ export const ArticleStepper = (props: ArticleStepperProps) => {
         if (resp.ok) {
             const respBody = await resp.json()
             console.log('Updated article:', respBody)
-            // const newArticles = context?.articles.map((article) => {
-            //     let returnArticle = article
-            //     respBody.updated_articles.forEach((updatedArticle: Article) => {
-            //         if (article._id === updatedArticle._id) {
-            //             console.log('updating row:', updatedArticle)
-            //             returnArticle = updatedArticle 
-            //         }
-            //     });
-            //     return returnArticle 
-            // }) ?? []
-
             if (context !== null) {
                 var newArticles = [...context.articles]
-                selectedArticles.forEach((article) => {
+                respBody.updated_articles.forEach((article: Article) => {
                     const idx = context?.articles.findIndex((a) => a._id === article._id)
                     if (idx > -1) {
                         newArticles.splice(idx, 1, article)
                     }
                 })
-                console.log('setting articles in context:', newArticles)
                 context?.setArticles(newArticles)
             }
-
-
-
         }
     }
 

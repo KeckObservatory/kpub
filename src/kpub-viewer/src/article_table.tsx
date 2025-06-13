@@ -35,7 +35,7 @@ export const adminColumns = [
     { field: 'archive', headerName: 'KOA?', minWidth: 70 },
     { field: 'affiliation', headerName: 'AFFILIATION', minWidth: 150 },
     { field: 'date_modified', headerName: 'DATE_MODIFIED', minWidth: 150 },
-    { field: 'last_modifier', headerName: 'LAST_MODIFIER', minWidth: 150 }
+    { field: 'last_modifier', headerName: 'LAST_MODIFIER', minWidth: 150 },
     { field: 'has_acknowledgement', headerName: 'Acknowledgement?', minWidth: 70 }
 ]
 

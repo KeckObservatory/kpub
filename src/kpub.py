@@ -124,7 +124,7 @@ class PublicationDB(MongoDBConnector):
         if self.article_exists(article):
             log.info("{} is already in the database "
                      "-- skipping.".format(article['bibcode']))
-            return
+            return 0
 
         # Print paper information to stdout
         #print(chr(27) + "[2J")  # Clear screen
@@ -164,6 +164,7 @@ class PublicationDB(MongoDBConnector):
 
         #add it
         self.add(article, mission=mission, snippits=snippits, instruments=instruments, archive=archive, affiliation=affiliation)
+        return 1
 
     def prompt_instruments(self, bibcode):
         '''Search for instances of instrument strings in full article.'''
@@ -658,8 +659,7 @@ class PublicationDB(MongoDBConnector):
                 statusmsg = ("\n\n\n\n\n\n********** "
                     f"Showing article {idx+1} out of {len(articles)} ({query['name']} query)"
                     " **********\n")
-                self.add_article(article, statusmsg=statusmsg, interactive=False)
-                numArticlesAdded += 1
+                numArticlesAdded += self.add_article(article, statusmsg=statusmsg, interactive=False)
 
         #all done
         log.info(f'\nFinished reviewing all articles for {month}. added {numArticlesAdded} new articles.')

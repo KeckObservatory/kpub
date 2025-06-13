@@ -636,6 +636,7 @@ class PublicationDB(MongoDBConnector):
 
         #query 1
         queries = self.config.get('ads_queries')
+        numArticlesAdded = 0
         for query in queries:
             log.info(f"\nQuerying {query['name']} (date={month})")
             data = self.query_ads(query['query'], month)
@@ -658,10 +659,11 @@ class PublicationDB(MongoDBConnector):
                     f"Showing article {idx+1} out of {len(articles)} ({query['name']} query)"
                     " **********\n")
                 self.add_article(article, statusmsg=statusmsg, interactive=False)
+                tally += 1
 
         #all done
-        log.info(f'\nFinished reviewing all articles for {month}.')
-        return True
+        log.info(f'\nFinished reviewing all articles for {month}. added {tally} new articles.')
+        return True, numArticlesAdded 
 
     def open_pdf(self, bibcode):
         '''Open PDF file in local browser.  Download if necessary.'''
@@ -957,8 +959,8 @@ def kpub_update(month):
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
 
     db = PublicationDB(config)
-    success = db.update(month=month)
-    return success
+    success, numArticlesAdded = db.update(month=month)
+    return success, numArticlesAdded 
 
 def kpub_add(bibcodes, interactive=False):
     """Add a publication with a known ADS bibcode."""

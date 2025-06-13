@@ -659,10 +659,10 @@ class PublicationDB(MongoDBConnector):
                     f"Showing article {idx+1} out of {len(articles)} ({query['name']} query)"
                     " **********\n")
                 self.add_article(article, statusmsg=statusmsg, interactive=False)
-                tally += 1
+                numArticlesAdded += 1
 
         #all done
-        log.info(f'\nFinished reviewing all articles for {month}. added {tally} new articles.')
+        log.info(f'\nFinished reviewing all articles for {month}. added {numArticlesAdded} new articles.')
         return True, numArticlesAdded 
 
     def open_pdf(self, bibcode):

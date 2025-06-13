@@ -72,7 +72,7 @@ class MongoDBConnector:
             finally:
                 self.client = None
 
-    def add_row(self, article, month, year, mission, snippits, instruments, archive, affiliation):
+    def add_row(self, article, month, year, mission, snippits, instruments, archive, affiliation, hasAcknowledgement=False):
         """Insert a document into the MongoDB collection."""
         try:
             # Use bibcode as the unique identifier
@@ -86,6 +86,7 @@ class MongoDBConnector:
             article['instruments'] = instruments.split('|')  # Convert to array
             article['archive'] = archive
             article['affiliation'] = affiliation
+            article['has_acknowledgement'] = hasAcknowledgement
             self.collection.insert_one(article)
             #self.collection.replace_one({'_id': article['_id']}, article, upsert=True)
             log.info(f"Inserted {article['bibcode']}")

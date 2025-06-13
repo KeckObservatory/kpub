@@ -18,24 +18,25 @@ interface EditToolbarProps extends GridToolbarProps, ToolbarPropsOverrides {
 export const ads_link = (x:string) => `${ADS_URL}/abs/${x}/abstract`
 
 export const columns: GridColDef<Article>[]  = [
-    { field: 'title', headerName: 'TITLE', width: 300 },
-    { field: 'bibcode', headerName: 'BIBCODE', width: 180, 
+    { field: 'title', headerName: 'TITLE', minWidth: 300 },
+    { field: 'bibcode', headerName: 'BIBCODE', minWidth: 180, 
         renderCell: (params) => {
             return (<a href={ads_link(params.value)} target="_blank" rel="noopener noreferrer">{params.value}</a>)
 
     }},
-    { field: 'year', headerName: 'YEAR', width: 70 },
-    { field: 'month', headerName: 'MONTH', width: 70 },
-    { field: 'instruments', headerName: 'INST', width: 90 },
+    { field: 'year', headerName: 'YEAR', minWidth: 70 },
+    { field: 'month', headerName: 'MONTH', minWidth: 70 },
+    { field: 'instruments', headerName: 'INST', minWidth: 90 },
 ]
 
 export const adminColumns = [
     ...columns,
-    { field: 'id', headerName: 'ID', width: 90 },
-    { field: 'archive', headerName: 'KOA?', width: 70 },
-    { field: 'affiliation', headerName: 'AFFILIATION', width: 150 },
-    { field: 'date_modified', headerName: 'DATE_MODIFIED', width: 150 },
-    { field: 'last_modifier', headerName: 'LAST_MODIFIER', width: 150 }
+    { field: 'id', headerName: 'ID', minWidth: 90 },
+    { field: 'archive', headerName: 'KOA?', minWidth: 70 },
+    { field: 'affiliation', headerName: 'AFFILIATION', minWidth: 150 },
+    { field: 'date_modified', headerName: 'DATE_MODIFIED', minWidth: 150 },
+    { field: 'last_modifier', headerName: 'LAST_MODIFIER', minWidth: 150 }
+    { field: 'has_acknowledgement', headerName: 'Acknowledgement?', minWidth: 70 }
 ]
 
 

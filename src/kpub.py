@@ -82,7 +82,7 @@ class PublicationDB(MongoDBConnector):
         #super().__init__(filename)
         super().__init__(self.config, 'kpub')
 
-    def add(self, article, mission, snippits, instruments, archive, affiliation):
+    def add(self, article, mission, snippits, instruments, archive, affiliation, hasAcknowledgement):
         """Adds a single article object to the database.
 
         Parameters:
@@ -92,6 +92,7 @@ class PublicationDB(MongoDBConnector):
             instruments (str): Pipe-delimited list of instruments
             archive (str): 0 or 1 indicating if archiving reference was found
             affiliation (str): 'keck', 'unrelated', or 'unknown'
+            hasAcknowledgement (bool): True if Keck acknowledgement was found in the article snippets. 
         """
         log.debug('Ingesting {}'.format(article['bibcode']))
 
@@ -100,19 +101,26 @@ class PublicationDB(MongoDBConnector):
         article['mission'] = mission
         article['instruments'] = instruments
         article['archive'] = archive
-        self.add_row(article, month, year, mission, snippits, instruments, archive, affiliation)
+        self.add_row(article, month, year, mission, snippits, instruments, archive, affiliation, hasAcknowledgement)
 
 
-    @staticmethod
-    def get_affiliation(snippits, mission):
+    def get_affiliation(self, snippits, mission):
         # Does snippits contain instrument strings and the mission is 'keck'? 
         # If so, then this is a Keck publication.
+        
+        acknowledgement = self.config.get('acknowledgement', [])
+        keys = snippits.keys()
         affiliation = 'unknown' # default
+        hasAcknowledgement = False
+        if any(x in keys for x in acknowledgement):
+            log.info("Acknowledgement found in snippets.")
+            affiliation = 'keck' 
+            hasAcknowledgement = True
         if len(snippits) > 0 and 'keck' in mission:
             affiliation = 'keck' # pretty sure its keck
         if len(snippits) == 0 and not 'keck' in mission:
             affiliation = 'unrelated' # pretty sure its unrelated
-        return affiliation
+        return affiliation, hasAcknowledgement
 
     def add_article(self, article, statusmsg="", interactive=False):
         """Adds an article via algorithm. the user can change the classification.
@@ -121,7 +129,8 @@ class PublicationDB(MongoDBConnector):
             article (json): Article json object returned from ADS API
         """        
         # Do not show an article that is already in the database
-        if self.article_exists(article):
+        if False:
+        #if self.article_exists(article):
             log.info("{} is already in the database "
                      "-- skipping.".format(article['bibcode']))
             return 0
@@ -155,41 +164,14 @@ class PublicationDB(MongoDBConnector):
         instruments = "|".join([ x for x in snippits.keys() if x not in missions])
 
         # Get archive ack
-        archive = ''
-        if mission != 'unrelated':
-            archive = self.get_archive_acknowledgement(article['bibcode'])
+        archive = self.get_archive_acknowledgement(snippits)
 
         # used for automation. Checks if this is a Keck publication.
-        affiliation = self.get_affiliation(snippits, mission)
+        affiliation, hasAcknowledgement = self.get_affiliation(snippits, mission)
 
         #add it
-        self.add(article, mission=mission, snippits=snippits, instruments=instruments, archive=archive, affiliation=affiliation)
+        self.add(article, mission=mission, snippits=snippits, instruments=instruments, archive=archive, affiliation=affiliation, hasAcknowledgement=hasAcknowledgement)
         return 1
-
-    def prompt_instruments(self, bibcode):
-        '''Search for instances of instrument strings in full article.'''
-
-        #if not config for this, then return empty array
-        instruments = self.config.get('instruments')
-        blacklist = self.config.get('blacklist', [])
-        if not instruments:
-            return ''
-
-        #try two methods for finding matches
-        ads_api_key = self.config.get('ADS_API_KEY')
-        try:
-            snippits = get_word_match_counts_by_pdf(bibcode, instruments, ads_api_key, blacklist)
-        except Exception as e:
-            log.warning("Could not parse PDF file.  Using alternate ADS query method...")
-            snippits = get_word_match_counts_by_query(bibcode, instruments, ads_api_key)
-
-        #log.info snippets
-        log.info("\nINSTRUMENT SNIPPETS FOUND:")
-        for instr, count in snippits.items():
-            for snippet in count['snippets']:
-                snippet = highlight_text(snippet, self.config['colors'])
-                log.info(f'"... {snippet}"')
-        return snippits 
 
     def find_all_snippets(self, bibcode):
 
@@ -198,11 +180,15 @@ class PublicationDB(MongoDBConnector):
         instruments = self.config.get('instruments', [])
         blacklist = self.config.get('blacklist', [])
         ads_api_key = self.config.get('ADS_API_KEY')
+        acknowledgement = self.config.get('acknowledgement', [])
+        archive = self.config.get('archive')
 
         #if not config for this, then return empty array
         words = []
         words += missions
         words += instruments
+        words += acknowledgement
+        words += archive
         if not words:
             return []
 
@@ -210,7 +196,7 @@ class PublicationDB(MongoDBConnector):
         try:
             counts = get_word_match_counts_by_pdf(bibcode, words, ads_api_key, blacklist)
         except Exception as err:
-            log.warning("Could not parse PDF file.  Using alternate ADS query method...")
+            log.warning(f"Could not parse PDF file. {err} Using alternate ADS query method...")
             counts = get_word_match_counts_by_query(bibcode, words, ads_api_key)
 
         #log.info snippets
@@ -223,36 +209,19 @@ class PublicationDB(MongoDBConnector):
         return counts
 
 
-    def get_archive_acknowledgement(self, bibcode):
+    def get_archive_acknowledgement(self, snippits):
         '''Search for instances of archive strings in full article.'''
 
         #if not config for this, then return empty array
         archive = self.config.get('archive')
         if not archive:
             return ''
-
-
-        #try two methods for finding matches
-        ads_api_key = self.config.get('ADS_API_KEY')
-        try:
-            counts = get_word_match_counts_by_pdf(bibcode, archive, ads_api_key)
-        except Exception as e:
-            log.warning("Could not parse PDF file.  Using alternate ADS query method...")
-            counts = get_word_match_counts_by_query(bibcode, archive, ads_api_key)
-
-        #log.info snippets
-        # log.info("ARCHIVE SNIPPETS FOUND:")
-        # for key, count in counts.items():
-        #     for snippet in count['snippets']:
-        #         snippet = highlight_text(snippet, self.config['colors'])
-        #         log.info(f'"... {snippet}"')
-        if len(counts) > 0:
-            log.info("ARCHIVE ACKNOWLDGEMENT FOUND")
-
-        #return "0" or "1"
-        #NOTE: Using str values b/c original code used blobs for all DB cols.
-        val = "1" if len(counts) > 0 else "0"
-        return val
+        keys = snippits.keys()
+        if any(x in keys for x in archive):
+            log.info("Archive acknowledgement found in snippets.")
+            return '1'  # 1 means archive acknowledgement found
+        else: 
+            return '0'
 
     def set_affiliation(self, articles, affiliation, last_modifier='kpub'):
         updated_articles = []

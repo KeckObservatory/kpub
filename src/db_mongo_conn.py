@@ -202,7 +202,7 @@ class MongoDBConnector:
     def get_articles_by_years_instrument(self, year_begin, year_end, instrument=None):
         """Get articles by year range, and instrument."""
         pipeline = []
-        query = { 'year': {'$gte': year_begin, '$lte': year_end, 'affiliation': 'keck'} }
+        query = { 'year': {'$gte': year_begin, '$lte': year_end }, 'affiliation': 'keck' }
         group = {'_id': {'year': '$year'}, 'count': {'$sum': 1}}
         if instrument:
             pipeline.append({'$unwind': '$instruments'})

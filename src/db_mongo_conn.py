@@ -192,6 +192,7 @@ class MongoDBConnector:
         """Get articles by mission and year range."""
         query = {
             'mission': mission,
+            'affiliation': 'keck',
             'year': {'$gte': year_begin, '$lte': year_end}
         }
         projection = {'year': 1, 'metrics': 1, '_id': 0}
@@ -201,7 +202,7 @@ class MongoDBConnector:
     def get_articles_by_years_instrument(self, year_begin, year_end, instrument=None):
         """Get articles by year range, and instrument."""
         pipeline = []
-        query = { 'year': {'$gte': year_begin, '$lte': year_end} }
+        query = { 'year': {'$gte': year_begin, '$lte': year_end, 'affiliation': 'keck'} }
         group = {'_id': {'year': '$year'}, 'count': {'$sum': 1}}
         if instrument:
             pipeline.append({'$unwind': '$instruments'})
@@ -222,7 +223,7 @@ class MongoDBConnector:
     def get_count_cumulative(self, year):
         """Get cumulative count of articles by mission and year."""
         query = {
-            'year': {'$lte': year}
+            'year': {'$lte': year, 'affiliation': 'keck'},
         }
         count = self.collection.count_documents(query)
         return count

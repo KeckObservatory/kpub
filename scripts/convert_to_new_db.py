@@ -24,7 +24,6 @@ def convert_to_new_db(input_db):
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
     db = PublicationDB(config)
 
-    affiliation = 'keck' 
     last_modifier = 'kpub (affiliation set by old db)'
     addingRows = []
     for row in df.to_dict(orient='records'):
@@ -32,13 +31,21 @@ def convert_to_new_db(input_db):
         metrics = json.loads(row['metrics'])
         row = {**row, **metrics}  # Merge metrics into the row
         date_modified = datetime.datetime.now()
+        affiliation = 'keck' 
         row = { **row, 'last_modifier': last_modifier, 'date_modified': date_modified, 'affiliation': affiliation }
         row['instruments'] = row['instruments'].split('|') if row.get('instruments') else []
-        if len(row['instruments']) < 1 and not row['archive']==1:
-            print(f"{bibcode} does not mention any instruments or KOA. skipping")
-            continue
+        archive = row.get('archive')
+        if isinstance(archive, str):
+            archive = True if '1' in row.get('archive') else False
+        elif isinstance(row.get('archive'), int):
+            archive = bool(archive) 
+        if len(row['instruments']) < 1 and not row['archive']:
+            print(f"{bibcode} does not mention any instruments or KOA. setting as unknown affiliation.")
+            affiliation = 'unknown'
         row['year'] = int(row['year']) if row.get('year') else None
         row['month'] = int(row['month'].split('-')[-1]) if row.get('month') else None
+        row['archive'] = archive 
+        row['affiliation'] = affiliation
         row['snippits'] = []
         # Remove the 'metrics' field as it's already merged into the row
         # Insert the row into the new database

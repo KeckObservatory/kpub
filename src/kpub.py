@@ -129,11 +129,12 @@ class PublicationDB(MongoDBConnector):
             article (json): Article json object returned from ADS API
         """        
         # Do not show an article that is already in the database
-        if False:
-        #if self.article_exists(article):
+        #if False:
+        if self.article_exists(article):
             log.info("{} is already in the database "
                      "-- skipping.".format(article['bibcode']))
             return 0
+
 
         # Print paper information to stdout
         #print(chr(27) + "[2J")  # Clear screen
@@ -219,9 +220,9 @@ class PublicationDB(MongoDBConnector):
         keys = snippits.keys()
         if any(x in keys for x in archive):
             log.info("Archive acknowledgement found in snippets.")
-            return '1'  # 1 means archive acknowledgement found
+            return True 
         else: 
-            return '0'
+            return False 
 
     def set_affiliation(self, articles, affiliation, last_modifier='kpub'):
         updated_articles = []

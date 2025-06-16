@@ -18,7 +18,7 @@ interface EditToolbarProps extends GridToolbarProps, ToolbarPropsOverrides {
 export const ads_link = (x: string) => `${ADS_URL}/abs/${x}/abstract`
 
 export const columns: GridColDef<Article>[] = [
-    { field: 'title', headerName: 'TITLE', minWidth: 300, width: 300 },
+    { field: 'title', headerName: 'TITLE', minWidth: 300, width: 837},
     {
         field: 'bibcode', headerName: 'BIBCODE', minWidth: 180,
         renderCell: (params) => {
@@ -141,11 +141,11 @@ export const ArticleTable = (props: Props) => {
         // Reset the row selection model when articles change
     }, [articles]);
     let cols = isAdmin ? adminColumns : columns as GridColDef<Article>[]
-    if (!isAdmin) {
+    if (isAdmin) {
         console.log('Setting title column minWidth');
         cols.map((col) => {
             if (col.field === 'title') {
-                col.width = 837;
+                col.width = 300;
                 return col;
             }
             return col;

@@ -142,9 +142,10 @@ export const ArticleTable = (props: Props) => {
     }, [articles]);
     let cols = isAdmin ? adminColumns : columns as GridColDef<Article>[]
     if (!isAdmin) {
+        console.log('Setting title column minWidth');
         cols.map((col) => {
             if (col.field === 'title') {
-                col.minWidth = 837;
+                col.width = 837;
                 return col;
             }
             return col;

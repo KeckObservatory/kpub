@@ -15,15 +15,17 @@ interface EditToolbarProps extends GridToolbarProps, ToolbarPropsOverrides {
     isAdmin: boolean | null;
 }
 
-export const ads_link = (x:string) => `${ADS_URL}/abs/${x}/abstract`
+export const ads_link = (x: string) => `${ADS_URL}/abs/${x}/abstract`
 
-export const columns: GridColDef<Article>[]  = [
+export const columns: GridColDef<Article>[] = [
     { field: 'title', headerName: 'TITLE', minWidth: 300 },
-    { field: 'bibcode', headerName: 'BIBCODE', minWidth: 180, 
+    {
+        field: 'bibcode', headerName: 'BIBCODE', minWidth: 180,
         renderCell: (params) => {
             return (<a href={ads_link(params.value)} target="_blank" rel="noopener noreferrer">{params.value}</a>)
 
-    }},
+        }
+    },
     { field: 'year', headerName: 'YEAR', minWidth: 70 },
     { field: 'month', headerName: 'MONTH', minWidth: 70 },
     { field: 'instruments', headerName: 'INST', minWidth: 90 },
@@ -84,9 +86,10 @@ export function EditToolbar(props: EditToolbarProps) {
         setIsStepperOpen(false);
     };
 
+
     return (
-        <Toolbar style={{padding: '5px', marginTop: '20px', marginBottom: '20px' }}> 
-            <Stack sx={{marginBottom: '20px'}}direction="row" spacing={5}>
+        <Toolbar style={{ padding: '5px', marginTop: '20px', marginBottom: '20px' }}>
+            <Stack sx={{ marginBottom: '20px' }} direction="row" spacing={5}>
                 <MonthYearPicker />
                 {props.isAdmin && (
                     <>
@@ -118,7 +121,7 @@ interface Props {
     isAdmin: boolean | null;
 }
 
-export const ArticleTable = (props: Props ) => {
+export const ArticleTable = (props: Props) => {
     const { articles, isAdmin } = props;
     const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>();
 
@@ -137,7 +140,16 @@ export const ArticleTable = (props: Props ) => {
         console.log('Articles updated:', articles);
         // Reset the row selection model when articles change
     }, [articles]);
-    const cols = isAdmin ? adminColumns : columns as GridColDef<Article>[]
+    let cols = isAdmin ? adminColumns : columns as GridColDef<Article>[]
+    if (!isAdmin) {
+        cols.map((col) => {
+            if (col.field === 'title') {
+                col.minWidth = 837;
+                return col;
+            }
+            return col;
+        })
+    }
 
     return (
         <DataGrid

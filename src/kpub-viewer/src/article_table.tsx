@@ -18,7 +18,7 @@ interface EditToolbarProps extends GridToolbarProps, ToolbarPropsOverrides {
 export const ads_link = (x: string) => `${ADS_URL}/abs/${x}/abstract`
 
 export const columns: GridColDef<Article>[] = [
-    { field: 'title', headerName: 'TITLE', minWidth: 300 },
+    { field: 'title', headerName: 'TITLE', minWidth: 300, width: 300 },
     {
         field: 'bibcode', headerName: 'BIBCODE', minWidth: 180,
         renderCell: (params) => {

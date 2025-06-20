@@ -670,9 +670,7 @@ class PublicationDB(MongoDBConnector):
             "&rows=9999999"
         )
         key = self.config.get('ADS_API_KEY')
-        headers = {'Authorization': f'Bearer {key}'}
-        resp = requests.get(url, headers=headers)
-        assert resp.status_code != 429, 'you have exceeded the number of times you can query ADS. Try again later'
+        resp = request_ads_api(query, key)
         data = resp.json()
         return data
 
@@ -680,6 +678,31 @@ class PublicationDB(MongoDBConnector):
 ##################
 # Helper functions
 ##################
+
+def request_ads_api(query, ads_api_key):
+    """Queries the ADS API with the given query string and returns the response data.
+
+    Parameters
+    ----------
+    query : str
+        The ADS query string to use for the API request.
+    ads_api_key : str
+        The API key for accessing the ADS API.
+
+    Returns
+    -------
+    dict
+        The JSON response from the ADS API.
+    """
+    url = f'{ADS_API}q={query}&fl=id,bibcode&rows=9999999'
+    headers = {'Authorization': f'Bearer {ads_api_key}'}
+    resp = requests.get(url, headers=headers)
+    rateLimitRem = resp.headers.get('X-RateLimit-Remaining')
+    if rateLimitRem < 10:
+        rateLimitReset = datetime.datetime.fromtimestamp(int(resp.headers.get('X-RateLimit-Reset')))
+        log.info(f"Rate limit remaining: {rateLimitRem}. Reset at {rateLimitReset} UTC.")
+    resp.raise_for_status()
+    return resp.json()
 
 def highlight_text(text, colors):
 
@@ -752,8 +775,7 @@ def get_word_match_counts_by_query(bibcode, words, ads_api_key):
             "&hl.fragsize=100"
             "&hl.maxAnalyzedChars=500000"
         )
-        headers = {'Authorization': f'Bearer {ads_api_key}'}
-        resp = requests.get(url, headers=headers)
+        resp = request_ads_api(url, ads_api_key)
         data = resp.json()
         counts[word] = {'count': 0, 'snippets': []}
         for doc in data.get('response', {}).get('docs',[]):
@@ -802,15 +824,12 @@ def get_word_match_counts_by_pdf(bibcode, words, ads_api_key, blacklist=[]):
 def get_pdf_file(bibcode, ads_api_key):
 
     outfile = f'/tmp/{bibcode}.pdf'
-    #outfile = f'/home/jriley/temp/{bibcode}.pdf'
     if os.path.isfile(outfile):
         return outfile
 
     log.info('\nRetrieving PDF (May take up to a minute)...')
     url = f'https://ui.adsabs.harvard.edu/link_gateway/{bibcode}/EPRINT_PDF'
-    #url = f'https://ui.adsabs.harvard.edu/link_gateway/{bibcode}/PUB_PDF'
-    headers = {f'Authorization': f'Bearer {ads_api_key}'}
-    resp = requests.get(url, headers=headers)
+    resp = request_ads_api(url, ads_api_key)
     if resp.status_code != 200 or len(resp.content) < 1000:
         print("Could not download PDF file.")
         return False

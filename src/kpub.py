@@ -700,7 +700,7 @@ def request_ads_api(query, ads_api_key):
     rateLimitRem = resp.headers.get('X-RateLimit-Remaining')
     if rateLimitRem < 10:
         rateLimitReset = datetime.datetime.fromtimestamp(int(resp.headers.get('X-RateLimit-Reset')))
-        log.info(f"Rate limit remaining: {rateLimitRem}. Reset at {rateLimitReset} UTC.")
+        log.warning(f"Rate limit remaining: {rateLimitRem}. Reset at {rateLimitReset} UTC.")
     resp.raise_for_status()
     return resp.json()
 

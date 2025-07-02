@@ -670,9 +670,8 @@ class PublicationDB(MongoDBConnector):
             "&rows=9999999"
         )
         key = self.config.get('ADS_API_KEY')
-        resp = request_ads_api(query, key)
-        data = resp.json()
-        return data
+        data = request_ads_api(query, key)
+        return data 
 
 
 ##################
@@ -775,8 +774,7 @@ def get_word_match_counts_by_query(bibcode, words, ads_api_key):
             "&hl.fragsize=100"
             "&hl.maxAnalyzedChars=500000"
         )
-        resp = request_ads_api(url, ads_api_key)
-        data = resp.json()
+        data = request_ads_api(url, ads_api_key)
         counts[word] = {'count': 0, 'snippets': []}
         for doc in data.get('response', {}).get('docs',[]):
             id = doc['id']

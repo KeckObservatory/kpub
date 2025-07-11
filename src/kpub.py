@@ -112,15 +112,18 @@ class PublicationDB(MongoDBConnector):
         keys = snippits.keys()
         affiliation = 'unknown' # default
         hasAcknowledgement = False
+        reason = "Neither instr nor ack found."
         if any(x in keys for x in acknowledgement):
-            log.info("Acknowledgement found in snippets.")
+            reason = "Acknowledgement found in snippets."
             affiliation = 'keck' 
             hasAcknowledgement = True
         if len(snippits) > 0 and 'keck' in mission:
+            reason = "Instrument names found in snippets."
             affiliation = 'keck' # pretty sure its keck
         if len(snippits) == 0 and not 'keck' in mission:
+            reason = "No instrument names found in snippets."
             affiliation = 'unrelated' # pretty sure its unrelated
-        return affiliation, hasAcknowledgement
+        return affiliation, hasAcknowledgement, reason
 
     def add_article(self, article, statusmsg="", interactive=False):
         """Adds an article via algorithm. the user can change the classification.
@@ -168,10 +171,13 @@ class PublicationDB(MongoDBConnector):
         archive = self.get_archive_acknowledgement(snippits)
 
         # used for automation. Checks if this is a Keck publication.
-        affiliation, hasAcknowledgement = self.get_affiliation(snippits, mission)
+        affiliation, hasAcknowledgement, reason = self.get_affiliation(snippits, mission)
 
         #add it
-        self.add(article, mission=mission, snippits=snippits, instruments=instruments, archive=archive, affiliation=affiliation, hasAcknowledgement=hasAcknowledgement)
+        self.add(article, mission=mission, 
+                 snippits=snippits, instruments=instruments, 
+                 archive=archive, affiliation=affiliation, 
+                 reason=reason, hasAcknowledgement=hasAcknowledgement)
         return 1
 
     def find_all_snippets(self, bibcode):

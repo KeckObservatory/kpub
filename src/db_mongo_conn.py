@@ -72,11 +72,14 @@ class MongoDBConnector:
             finally:
                 self.client = None
 
-    def add_row(self, article, month, year, mission, snippits, instruments, archive, affiliation, hasAcknowledgement=False):
+    def add_row(self, article, month, year, mission, 
+                snippits, instruments, archive, affiliation, 
+                reason, hasAcknowledgement=False):
         """Insert a document into the MongoDB collection."""
         try:
             # Use bibcode as the unique identifier
             article['_id'] = article['bibcode']
+
             article['last_modifier'] = 'kpub'
             article['date_modified'] = datetime.datetime.now()
             article['month'] = int(month)

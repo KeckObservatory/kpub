@@ -669,8 +669,8 @@ class PublicationDB(MongoDBConnector):
             "&hl.maxAnalyzedChars=500000"
             "&rows=9999999"
         )
-        key = self.config.get('ADS_API_KEY')
-        data = request_ads_api(query, key)
+        ads_api_key = self.config.get('ADS_API_KEY')
+        data = request_ads_api(url, ads_api_key)
         return data 
 
 
@@ -678,7 +678,7 @@ class PublicationDB(MongoDBConnector):
 # Helper functions
 ##################
 
-def request_ads_api(query, ads_api_key):
+def request_ads_api(url, ads_api_key):
     """Queries the ADS API with the given query string and returns the response data.
 
     Parameters
@@ -693,7 +693,6 @@ def request_ads_api(query, ads_api_key):
     dict
         The JSON response from the ADS API.
     """
-    url = f'{ADS_API}q={query}&fl=id,bibcode&rows=9999999'
     headers = {'Authorization': f'Bearer {ads_api_key}'}
     resp = requests.get(url, headers=headers)
     rateLimitRem = resp.headers.get('X-RateLimit-Remaining')

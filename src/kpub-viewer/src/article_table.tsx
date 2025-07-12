@@ -28,7 +28,7 @@ export const columns: GridColDef<Article>[] = [
     },
     { field: 'year', headerName: 'YEAR', width: 70 },
     { field: 'month', headerName: 'MONTH', width: 70 },
-    { field: 'instruments', headerName: 'INST', width: 120 },
+    { field: 'instruments', headerName: 'INST', width: 160 },
 ]
 
 export const adminColumns = [
@@ -38,7 +38,7 @@ export const adminColumns = [
     { field: 'affiliation', headerName: 'AFFILIATION', width: 150 },
     { field: 'reason', headerName: 'REASON', width: 150 },
     { field: 'date_modified', headerName: 'DATE_MODIFIED', width: 150 },
-    { field: 'last_modifier', headerName: 'LAST_MODIFIER', width: 100 },
+    { field: 'last_modifier', headerName: 'LAST_MODIFIER', width: 125 },
     { field: 'has_acknowledgement', headerName: 'Acknowledgement?', width: 70 }
 ]
 

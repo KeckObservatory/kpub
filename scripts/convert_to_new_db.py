@@ -46,6 +46,7 @@ def convert_to_new_db(input_db):
         row['month'] = int(row['month'].split('-')[-1]) if row.get('month') else None
         row['archive'] = archive 
         row['affiliation'] = affiliation
+        row['reason'] = 'Converted from old database' 
         row['snippits'] = []
         # Remove the 'metrics' field as it's already merged into the row
         # Insert the row into the new database

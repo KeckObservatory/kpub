@@ -89,6 +89,7 @@ class MongoDBConnector:
             article['instruments'] = instruments.split('|')  # Convert to array
             article['archive'] = archive
             article['affiliation'] = affiliation
+            article['reason'] = reason
             article['has_acknowledgement'] = hasAcknowledgement
             self.collection.insert_one(article)
             #self.collection.replace_one({'_id': article['_id']}, article, upsert=True)

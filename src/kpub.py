@@ -82,7 +82,7 @@ class PublicationDB(MongoDBConnector):
         #super().__init__(filename)
         super().__init__(self.config, 'kpub')
 
-    def add(self, article, mission, snippits, instruments, archive, affiliation, hasAcknowledgement):
+    def add(self, article, mission, snippits, instruments, archive, affiliation, reason, hasAcknowledgement):
         """Adds a single article object to the database.
 
         Parameters:
@@ -101,7 +101,7 @@ class PublicationDB(MongoDBConnector):
         article['mission'] = mission
         article['instruments'] = instruments
         article['archive'] = archive
-        self.add_row(article, month, year, mission, snippits, instruments, archive, affiliation, hasAcknowledgement)
+        self.add_row(article, month, year, mission, snippits, instruments, archive, affiliation, reason, hasAcknowledgement)
 
 
     def get_affiliation(self, snippits, mission):

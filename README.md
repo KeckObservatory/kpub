@@ -4,6 +4,11 @@
 
 `kpub` is a generic tool that enables an institution to keep track of it's scientific publications in an easy way. It leverages MongoDB and the [ADS API](https://github.com/adsabs/adsabs-dev-api) to create and curate a database that contains the metadata of mission-related articles.
 
+This project has been expanded to run as a Python library. 
+Data is configured to run on a MongoDB database. 
+A Flask server handles HTTP requests to serve data, update affiliation information, and update the database.
+It is designed to run at the W. M. Keck Observatory and may no longer function as it originally intended.
+
 This tool is made possible thanks to the efforts of Geert Barentsen who wrote the original version of [kpub](https://github.com/KeplerGO/kpub) for Kepler/K2.  The major changes here are:
 
 - Code is a library installed with `pip install -e .`

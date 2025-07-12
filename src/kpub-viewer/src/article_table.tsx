@@ -38,7 +38,7 @@ export const adminColumns = [
     { field: 'affiliation', headerName: 'AFFILIATION', width: 150 },
     { field: 'reason', headerName: 'REASON', width: 150 },
     { field: 'date_modified', headerName: 'DATE_MODIFIED', width: 150 },
-    { field: 'last_modifier', headerName: 'LAST_MODIFIER', width: 125 },
+    { field: 'last_modifier', headerName: 'LAST_MODIFIER', width: 150 },
     { field: 'has_acknowledgement', headerName: 'Acknowledgement?', width: 70 }
 ]
 

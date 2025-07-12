@@ -36,7 +36,7 @@ export const adminColumns = [
     { field: 'id', headerName: 'ID', width: 70 },
     { field: 'archive', headerName: 'KOA?', width: 70 },
     { field: 'affiliation', headerName: 'AFFILIATION', width: 150 },
-    { field: 'reason', headerName: 'REASON', width: 70 },
+    { field: 'reason', headerName: 'REASON', width: 150 },
     { field: 'date_modified', headerName: 'DATE_MODIFIED', width: 150 },
     { field: 'last_modifier', headerName: 'LAST_MODIFIER', width: 100 },
     { field: 'has_acknowledgement', headerName: 'Acknowledgement?', width: 70 }
@@ -147,6 +147,14 @@ export const ArticleTable = (props: Props) => {
         cols.map((col) => {
             if (col.field === 'title') {
                 col.width = 300;
+                return col;
+            }
+            else if (col.field === 'instruments') {
+                col.width = 200;
+                return col;
+            }
+            else if (col.field === 'has_acknowledgement') {
+                col.width = 200;
                 return col;
             }
             return col;

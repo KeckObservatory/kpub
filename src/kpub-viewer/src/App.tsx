@@ -140,7 +140,7 @@ function App() {
 
   return (
     <div className="App" style={{
-      "maxWidth": "1430px",
+      "maxWidth": isAdmin ? "1900px" : "1430px",
       "margin": "0 auto",
       "padding": "2rem",
       "textAlign": "center",

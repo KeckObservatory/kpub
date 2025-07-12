@@ -36,7 +36,7 @@ export const adminColumns = [
     { field: 'id', headerName: 'ID', width: 70 },
     { field: 'archive', headerName: 'KOA?', width: 70 },
     { field: 'affiliation', headerName: 'AFFILIATION', width: 150 },
-    { field: 'reason', headerName: 'Acknowledgement?', width: 70 },
+    { field: 'reason', headerName: 'REASON', width: 70 },
     { field: 'date_modified', headerName: 'DATE_MODIFIED', width: 150 },
     { field: 'last_modifier', headerName: 'LAST_MODIFIER', width: 100 },
     { field: 'has_acknowledgement', headerName: 'Acknowledgement?', width: 70 }

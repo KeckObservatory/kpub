@@ -1152,7 +1152,7 @@ def make_parser():
     import_parser.add_argument('jsonfile',
                         help="Filename of the JSON file to ingest.")
 
-    export_parser = subparsers.add_parser('export', help='Batch-export articles to a JSON file.')
+    export_parser = subparsers.add_parser('export', help='Batch-export articles to a JSON file (or CSV if specified).')
     export_parser.add_argument('monthyear', type=str, nargs='?', default=datetime.datetime.now().strftime("%Y-%m"),
                         metavar='YYYY-MM',
                         help="Month Year to export. YYYY-MM or YYYY. e.g. '2015-06' or '2020'")

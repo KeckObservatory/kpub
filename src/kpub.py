@@ -137,7 +137,7 @@ class PublicationDB(MongoDBConnector):
         if self.article_exists(article):
             log.info("{} is already in the database "
                      "-- skipping.".format(article['bibcode']))
-            return 0
+            #return 0
 
 
         # Print paper information to stdout
@@ -201,6 +201,7 @@ class PublicationDB(MongoDBConnector):
             return []
 
         #try two methods for finding matches
+
         try:
             counts = get_word_match_counts_by_pdf(bibcode, words, ads_api_key, blacklist)
         except Exception as err:
@@ -685,7 +686,7 @@ class PublicationDB(MongoDBConnector):
 # Helper functions
 ##################
 
-def request_ads_api(url, ads_api_key):
+def request_ads_api(url, ads_api_key, returnResp=False):
     """Queries the ADS API with the given query string and returns the response data.
 
     Parameters
@@ -702,11 +703,13 @@ def request_ads_api(url, ads_api_key):
     """
     headers = {'Authorization': f'Bearer {ads_api_key}'}
     resp = requests.get(url, headers=headers)
-    rateLimitRem = resp.headers.get('X-RateLimit-Remaining')
+    rateLimitRem = resp.headers.get('X-RateLimit-Remaining', 100)
     if int(rateLimitRem) < 10:
         rateLimitReset = datetime.datetime.fromtimestamp(int(resp.headers.get('X-RateLimit-Reset')))
         log.warning(f"Rate limit remaining: {rateLimitRem}. Reset at {rateLimitReset} UTC.")
     resp.raise_for_status()
+    if returnResp:
+        return resp
     return resp.json()
 
 def highlight_text(text, colors):
@@ -833,7 +836,7 @@ def get_pdf_file(bibcode, ads_api_key):
 
     log.info('\nRetrieving PDF (May take up to a minute)...')
     url = f'https://ui.adsabs.harvard.edu/link_gateway/{bibcode}/EPRINT_PDF'
-    resp = request_ads_api(url, ads_api_key)
+    resp = request_ads_api(url, ads_api_key, returnResp=True)
     if resp.status_code != 200 or len(resp.content) < 1000:
         print("Could not download PDF file.")
         return False

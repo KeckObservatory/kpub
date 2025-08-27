@@ -107,6 +107,10 @@ function App() {
       if (isAdmin.current === null) {
         isAdmin.current = resp.isAdmin
       }
+
+        if (!isAdmin.current) { //If not admin, only show Keck affiliations
+        resp.articles = resp.articles.filter((a: Article) => a.affiliation.toLowerCase() === 'keck')
+      }
       setState((prevState) => {
         return {
           ...prevState,

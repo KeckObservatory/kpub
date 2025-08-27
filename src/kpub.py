@@ -20,6 +20,7 @@ import webbrowser
 from pprint import pprint
 import logging
 import jinja2
+import pandas as pd
 import pdb
 from db_mongo_conn import MongoDBConnector 
 #init logging
@@ -1012,7 +1013,7 @@ def kpub_set_affiliation(articles, affiliation, last_modifier):
     return articles
     
 
-def kpub_export(monthyear, begin_year=None, filename=None, affiliation=None):
+def kpub_export(monthyear, begin_year=None, filename=None, affiliation=None, csv=None):
     """Export the database as JSON format."""
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
     db = PublicationDB(config)
@@ -1028,8 +1029,12 @@ def kpub_export(monthyear, begin_year=None, filename=None, affiliation=None):
         log.info('No filename specified.  Returning articles as list of dicts.')
         return articles
 
-    with open(filename, 'w') as f:
-        json.dump(articles, f, indent=4, default=serialize_datetime)
+    if csv:
+        df = pd.DataFrame(articles)
+        df.to_csv(filename, index=False)
+    else:
+        with open(filename, 'w') as f:
+            json.dump(articles, f, indent=4, default=serialize_datetime)
     log.info(f'Wrote {len(articles)} articles to {filename}')
     
 def serialize_datetime(obj):
@@ -1157,7 +1162,9 @@ def make_parser():
                         help="Affiliation to export.")
     export_parser.add_argument('-filename', type=str, nargs='?',
                         help="Filename to export to.")
-    
+    export_parser.add_argument('-csv', action='store_true',
+                        help="Export as CSV instead of JSON.")
+
     stats_parser = subparsers.add_parser('stats', help='Get the publication statistics.')
 
     spreadsheet_parser=subparsers.add_parser('spreadsheet', help='Export the database to a spreadsheet.')
@@ -1176,7 +1183,7 @@ if __name__ == "__main__":
     elif cmd == 'plot_data': kpub_plot_data(margs.plotname, margs.instruments, margs.year_begin, margs.extrapolate)
     elif cmd == 'delete':    kpub_delete(margs.bibcode)
     elif cmd == 'import':    kpub_import(margs.jsonfile)
-    elif cmd == 'export':    kpub_export(margs.monthyear, margs.begin_year, margs.filename, margs.affiliation)
+    elif cmd == 'export':    kpub_export(margs.monthyear, margs.begin_year, margs.filename, margs.affiliation, margs.csv)
     elif cmd == 'stats':     kpub_stats()
     elif cmd == 'spreadsheet': kpub_spreadsheet(margs.filename)
     else: log.error("Unknown kpub command")

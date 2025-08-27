@@ -1,4 +1,4 @@
-import { DataGrid, type GridColDef, type GridRowSelectionModel, type GridToolbarProps, type ToolbarPropsOverrides } from '@mui/x-data-grid';
+import { DataGrid, ToolbarButton, type GridColDef, type GridRowSelectionModel, type GridToolbarProps, type ToolbarPropsOverrides } from '@mui/x-data-grid';
 import { type Article } from './App';
 import { ADS_URL } from './config'
 import Stack from '@mui/material/Stack';
@@ -8,7 +8,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { ArticleStepper } from './article_stepper';
 import { BulkAssigner } from './bulk_assigner';
 import { MonthYearPicker } from './monthyear_picker';
-
+import { ExportCsv } from '@mui/x-data-grid';
+import Tooltip from '@mui/material/Tooltip';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 
 interface EditToolbarProps extends GridToolbarProps, ToolbarPropsOverrides {
     selectedArticles: Article[];
@@ -18,7 +20,7 @@ interface EditToolbarProps extends GridToolbarProps, ToolbarPropsOverrides {
 export const ads_link = (x: string) => `${ADS_URL}/abs/${x}/abstract`
 
 export const columns: GridColDef<Article>[] = [
-    { field: 'title', headerName: 'TITLE', minWidth: 300, width: 837},
+    { field: 'title', headerName: 'TITLE', minWidth: 300, width: 837 },
     {
         field: 'bibcode', headerName: 'BIBCODE', width: 180,
         renderCell: (params) => {
@@ -112,6 +114,11 @@ export function EditToolbar(props: EditToolbarProps) {
                         />
                     </>
                 )}
+                <Tooltip title="Download as CSV">
+                    <ExportCsv render={<ToolbarButton />}>
+                        <FileDownloadIcon fontSize="small" />
+                    </ExportCsv>
+                </Tooltip>
             </Stack>
         </Toolbar>
     );

@@ -1,5 +1,17 @@
 *.live*
 .DS_Store
+.env
+data/plots/*
+package-lock.json
+node_modules
+data/output/*
+*.txt
+*.png
+*.pdf
+*.md
+*.xlsx
+*.csv
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

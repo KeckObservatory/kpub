@@ -1,0 +1,17 @@
+openapi: 3.0.3
+info:
+  contact:
+    email: ssg@keck.hawaii.edu
+  title: KPUB API
+  description: |-
+    API pertaining to the KPUB Tool. 
+  version: 1.0.0
+servers:
+  - url: https://vm-appserver.keck.hawaii.edu/api/kpub/
+    description: Production server
+  - url: https://vm-dev-appserver.keck.hawaii.edu/api/kpub/
+    description: Test server
+paths:
+components:
+  parameters:
+  schemas:

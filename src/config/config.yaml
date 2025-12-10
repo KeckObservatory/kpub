@@ -1,5 +1,13 @@
 {
-
+  #MONGODB connection string
+  #NOTE: This is the connection string to your MongoDB instance.
+  "kpub": {
+      server: "",
+      user: "api_user",
+      pwd: "",
+      database: "kpub",
+      collection: "articles",
+    },
   #ADS API Key 
   #NOTE: Create an account at https://ui.adsabs.harvard.edu/, generate an ADS API key and copy it here.
   "ADS_API_KEY": "",
@@ -12,7 +20,7 @@
   #NOTE: missions is the main grouping and is required. Sciences is optional.
   "missions": ['keck'],
   "sciences": [],
-
+  
   #Sets of queries to run.  
   #"query" string is exactly what is entered into the ADS web gui. See ADS website for query string nuances.
   #The suggested strategy is that the first group should be mostly good matches and needs less scrutiny, 
@@ -57,6 +65,10 @@
     'LGS',
     'NGS',
   ],
+
+  #blacklist strings to look for to indicate article should be ignored.
+  #NOTE: You will not be prompted to confirm this.
+  "blacklist": ["TIMESCALES", "BAYESIAN", "ESING", "THESIS", "INGS"],
 
   #Archives strings to look for to indicate archiving was referenced.
   #NOTE: You will not be prompted to confirm this.

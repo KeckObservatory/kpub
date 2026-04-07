@@ -12,7 +12,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api/kpub': 'http://vm-dev-appserver/api/kpub', // Point to production API
+      '/api/kpub': '/api/kpub', // No proxy, point to local server
       // '/api/kpub': 'http://localhost:5001', // Point to dev_server
     },
   },

@@ -99,6 +99,7 @@ function App() {
   const isAdmin = useRef<boolean | null>(null);
 
   const fetchData = async () => {
+    console.log(apiURL)
     const response = await fetch(`${apiURL}/get_table?monthyear=${monthyear}`)
     if (!response.ok) {
       console.warn('Network response was not ok')

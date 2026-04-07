@@ -12,8 +12,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api/kpub': '/api/kpub', // No proxy, point to local server
-      // '/api/kpub': 'http://localhost:5001', // Point to dev_server
+      '/api/kpub': '/api/kpub' // Configure proxy here if running from non-prod machine
     },
   },
 })

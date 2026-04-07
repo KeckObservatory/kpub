@@ -5,6 +5,7 @@ data/plots/*
 package-lock.json
 node_modules
 data/output/*
+data/
 *.txt
 *.png
 *.pdf

@@ -10,9 +10,4 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     minify: false,
   },
-  server: {
-    proxy: {
-      '/api/kpub': '/api/kpub' // Configure proxy here if running from non-prod machine
-    },
-  },
 })

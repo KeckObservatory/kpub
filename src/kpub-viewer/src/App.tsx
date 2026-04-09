@@ -7,7 +7,7 @@ import { ArticleTable } from './article_table'
 import { TopBar } from './top_bar'
 import { Box } from '@mui/material'
 
-//export const apiURL = 'http://vm-dev-appserver/api/kpub'
+// export const apiURL = 'http://vm-dev-appserver/api/kpub'
 
 export interface Snippits {
   [key: string]: {
@@ -65,6 +65,8 @@ export interface Article {
   citation_count?: number
   indexstamp?: string
   mission?: string
+  ilabel?: string
+  keck_score?: number
 }
 
 interface State {
@@ -97,6 +99,7 @@ function App() {
   const isAdmin = useRef<boolean | null>(null);
 
   const fetchData = async () => {
+    console.log(apiURL)
     const response = await fetch(`${apiURL}/get_table?monthyear=${monthyear}`)
     if (!response.ok) {
       console.warn('Network response was not ok')

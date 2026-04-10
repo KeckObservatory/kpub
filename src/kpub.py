@@ -232,14 +232,14 @@ class PublicationDB(MongoDBConnector):
         else: 
             return False 
 
-    def set_affiliation(self, articles, affiliation, last_modifier='kpub', koa_affiliation=None):
+    def set_affiliation(self, articles, last_modifier='kpub', affiliation=None, koa_affiliation=None):
         updated_articles = []
         for article in articles:
             # Get the bibcode
             article['date_modified'] = datetime.datetime.now()
             if koa_affiliation is not None:
                 article['archive'] = koa_affiliation
-            else:
+            if affiliation is not None:
                 article['affiliation'] = affiliation
             article['last_modifier'] = last_modifier
             # Save the changes to the database

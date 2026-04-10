@@ -20,7 +20,7 @@ import { ads_link } from './article_table';
 interface ArticleStepperProps extends BulkAssignerProps { }
 
 export const ArticleStepper = (props: ArticleStepperProps) => {
-    const { selectedArticles, isOpen, handleClose } = props;
+    const { selectedArticles, isOpen, handleClose, isKOA } = props;
     const [selectedOption, setSelectedOption] = useState('Keck');
     const [activeStep, setActiveStep] = useState(0);
     const context = useStateContext()
@@ -37,7 +37,7 @@ export const ArticleStepper = (props: ArticleStepperProps) => {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                affiliation: selectedOption,
+                [isKOA ? 'koa_affiliation' : 'affiliation']: selectedOption,
                 articles: [selectedArticles[activeStep]],
             }),
         })
@@ -114,6 +114,7 @@ export const ArticleStepper = (props: ArticleStepperProps) => {
                                     selectedOption={selectedOption}
                                     setSelectedOption={setSelectedOption}
                                     row={true}
+                                    isKOA={isKOA}
                                 />
                                 {/* <Select
                                     value={selectedOption}
@@ -147,9 +148,12 @@ export const ArticleStepper = (props: ArticleStepperProps) => {
         )
     })
 
+    const title = 'change ' + (isKOA ? 'KOA' : 'Keck') + ' affiliation for Selected Articles' 
+    const stepper_title = 'Stepper for verifiying ' + (isKOA ? 'KOA' : 'Keck') + ' article affiliation' 
+
     return (
         <Dialog maxWidth={'xl'} fullWidth open={isOpen} onClose={handleClose}>
-            <DialogTitle>Stepper for verifiying article affiliation</DialogTitle>
+            <DialogTitle>{stepper_title}</DialogTitle>
             <DialogContent>
                 <Stepper activeStep={activeStep} orientation="vertical">
                     {step_components}
@@ -160,7 +164,7 @@ export const ArticleStepper = (props: ArticleStepperProps) => {
                     {activeStep >= selectedArticles.length && (
                         <>
                             <Typography variant="body2">
-                                All articles have been updated with the selected affiliation. You may exit.
+                                All articles have been updated with the selected {isKOA ? 'KOA' : 'Keck'}affiliation. You may exit.
                             </Typography>
                             <Button
                                 onClick={handleBack}

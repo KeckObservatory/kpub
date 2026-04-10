@@ -15,6 +15,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 export interface BulkAssignerProps {
     selectedArticles: Article[];
     isOpen: boolean;
+    isKOA: boolean;
     handleClose: () => void;
 }
 
@@ -22,6 +23,7 @@ interface AffiliationButtonGroupProps {
     selectedOption: string;
     setSelectedOption: (option: string) => void;
     row: boolean;
+    isKOA: boolean;
 }
 
 export const AffiliationButtonGroup = (props: AffiliationButtonGroupProps) => {
@@ -34,9 +36,18 @@ export const AffiliationButtonGroup = (props: AffiliationButtonGroupProps) => {
                 value={props.selectedOption}
                 onChange={(e) => props.setSelectedOption(e.target.value)}
             >
-                <FormControlLabel value="Keck" control={<Radio />} label="Keck" />
-                <FormControlLabel value="unknown" control={<Radio />} label="Unknown" />
-                <FormControlLabel value="unrelated" control={<Radio />} label="Unrelated" />
+                {props.isKOA ? (
+                    <>
+                        <FormControlLabel value={true} control={<Radio />} label="KOA" />
+                        <FormControlLabel value={false} control={<Radio />} label="Not KOA" />
+                    </>
+                ) : (
+                    <>
+                        <FormControlLabel value="Keck" control={<Radio />} label="Keck" />
+                        <FormControlLabel value="unknown" control={<Radio />} label="Unknown" />
+                        <FormControlLabel value="unrelated" control={<Radio />} label="Unrelated" />
+                    </>
+                )}
             </RadioGroup>
         </FormControl>
     )
@@ -45,7 +56,7 @@ export const AffiliationButtonGroup = (props: AffiliationButtonGroupProps) => {
 
 export const BulkAssigner = (props: BulkAssignerProps) => {
 
-    const { selectedArticles, isOpen, handleClose} = props;
+    const { selectedArticles, isOpen, handleClose, isKOA } = props;
 
     const [selectedOption, setSelectedOption] = useState('Keck');
 
@@ -62,6 +73,7 @@ export const BulkAssigner = (props: BulkAssignerProps) => {
             },
             body: JSON.stringify({
                 affiliation: selectedOption,
+                [isKOA ? 'koa_affiliation' : 'affiliation']: selectedOption,
                 articles: selectedArticles,
             }),
         })
@@ -91,6 +103,7 @@ export const BulkAssigner = (props: BulkAssignerProps) => {
                     selectedOption={selectedOption}
                     setSelectedOption={setSelectedOption}
                     row={false}
+                    isKOA={isKOA}
                 />
                 {/* <Select
                     value={selectedOption}

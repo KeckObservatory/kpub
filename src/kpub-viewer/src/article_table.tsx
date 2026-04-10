@@ -96,48 +96,48 @@ export function EditToolbar(props: EditToolbarProps) {
             <Stack sx={{ marginBottom: '20px' }} direction="row" spacing={5}>
                 <MonthYearPicker />
                 {props.isAdmin && (
-                    <>
-                    <Stack direction="row" spacing={2}>
-                        <Button color="primary" onClick={() => openDialog('bulk')} variant="contained">
-                            Change Keck Affiliation of Selected Articles
-                        </Button>
-                        <Button color="primary" onClick={() => openDialog('stepper')} variant="contained">
-                            Bulk Change Keck Affiliation of Selected Articles
-                        </Button>
-                        <ArticleStepper
-                            selectedArticles={props.selectedArticles}
-                            isOpen={isDialogOpen}
-                            handleClose={handleCloseDialog}
-                            isKOA={false}
-                        />
-                        <BulkAssigner
-                            selectedArticles={props.selectedArticles}
-                            isOpen={isStepperOpen}
-                            handleClose={handleCloseStepper}
-                            isKOA={false}
-                        />
+                    <Stack direction="column" spacing={2}>
                         <Stack direction="row" spacing={2}>
                             <Button color="primary" onClick={() => openDialog('bulk')} variant="contained">
-                                Change KOA Affiliation of Selected Articles
+                                Change Keck Affiliation of Selected Articles
                             </Button>
                             <Button color="primary" onClick={() => openDialog('stepper')} variant="contained">
-                                Bulk Change KOA Affiliation of Selected Articles
+                                Bulk Change Keck Affiliation of Selected Articles
                             </Button>
                             <ArticleStepper
                                 selectedArticles={props.selectedArticles}
                                 isOpen={isDialogOpen}
                                 handleClose={handleCloseDialog}
-                                isKOA={true}
+                                isKOA={false}
                             />
                             <BulkAssigner
                                 selectedArticles={props.selectedArticles}
                                 isOpen={isStepperOpen}
                                 handleClose={handleCloseStepper}
-                                isKOA={true}
+                                isKOA={false}
                             />
+                            <Stack direction="row" spacing={2}>
+                                <Button color="primary" onClick={() => openDialog('bulk')} variant="contained">
+                                    Change KOA Affiliation of Selected Articles
+                                </Button>
+                                <Button color="primary" onClick={() => openDialog('stepper')} variant="contained">
+                                    Bulk Change KOA Affiliation of Selected Articles
+                                </Button>
+                                <ArticleStepper
+                                    selectedArticles={props.selectedArticles}
+                                    isOpen={isDialogOpen}
+                                    handleClose={handleCloseDialog}
+                                    isKOA={true}
+                                />
+                                <BulkAssigner
+                                    selectedArticles={props.selectedArticles}
+                                    isOpen={isStepperOpen}
+                                    handleClose={handleCloseStepper}
+                                    isKOA={true}
+                                />
+                            </Stack>
                         </Stack>
                     </Stack>
-                    </>
                 )}
                 <Tooltip title="Download as CSV">
                     <ExportCsv render={<ToolbarButton />}>

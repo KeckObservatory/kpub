@@ -72,7 +72,6 @@ export const BulkAssigner = (props: BulkAssignerProps) => {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                affiliation: selectedOption,
                 [isKOA ? 'koa_affiliation' : 'affiliation']: selectedOption,
                 articles: selectedArticles,
             }),

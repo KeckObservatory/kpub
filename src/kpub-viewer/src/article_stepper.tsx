@@ -148,7 +148,6 @@ export const ArticleStepper = (props: ArticleStepperProps) => {
         )
     })
 
-    const title = 'change ' + (isKOA ? 'KOA' : 'Keck') + ' affiliation for Selected Articles' 
     const stepper_title = 'Stepper for verifiying ' + (isKOA ? 'KOA' : 'Keck') + ' article affiliation' 
 
     return (

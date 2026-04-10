@@ -48,6 +48,8 @@ export const adminColumns = [
 
 
 export function EditToolbar(props: EditToolbarProps) {
+    const [isKOADialogOpen, setIsKOADialogOpen] = useState(false);
+    const [isKOAStepperOpen, setIsKOAStepperOpen] = useState(false);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isStepperOpen, setIsStepperOpen] = useState(false);
     const [_, setIsPlotOpen] = useState(false);
@@ -63,16 +65,28 @@ export function EditToolbar(props: EditToolbarProps) {
         }
     }
 
+    const openKOADialog = (type: string) => {
+        if (type === 'bulk') {
+            handleOpenKOADialog()
+        } else if (type === 'stepper') {
+            handleOpenKOAStepper()
+        }
+    }
+
 
     const handleOpenPlot = () => {
         setIsDialogOpen(false);
         setIsStepperOpen(false);
+        setIsKOADialogOpen(false);
+        setIsKOAStepperOpen(false);
         setIsPlotOpen(true);
     };
 
     const handleOpenDialog = () => {
         setIsDialogOpen(true);
         setIsStepperOpen(false);
+        setIsKOADialogOpen(false);
+        setIsKOAStepperOpen(false);
         setIsPlotOpen(false);
     };
 
@@ -83,11 +97,37 @@ export function EditToolbar(props: EditToolbarProps) {
     const handleOpenStepper = () => {
         setIsStepperOpen(true);
         setIsDialogOpen(false);
+        setIsKOADialogOpen(false);
+        setIsKOAStepperOpen(false);
         setIsPlotOpen(false);
     };
 
     const handleCloseStepper = () => {
         setIsStepperOpen(false);
+    };
+
+    const handleOpenKOADialog = () => {
+        setIsDialogOpen(false);
+        setIsStepperOpen(false);
+        setIsKOADialogOpen(true);
+        setIsKOAStepperOpen(false);
+        setIsPlotOpen(false);
+    };
+
+    const handleCloseKOADialog = () => {
+        setIsKOADialogOpen(false);
+    };
+
+    const handleOpenKOAStepper = () => {
+        setIsStepperOpen(false);
+        setIsDialogOpen(false);
+        setIsKOADialogOpen(false);
+        setIsKOAStepperOpen(true);
+        setIsPlotOpen(false);
+    };
+
+    const handleCloseKOAStepper = () => {
+        setIsKOAStepperOpen(false);
     };
 
 
@@ -117,22 +157,22 @@ export function EditToolbar(props: EditToolbarProps) {
                                 isKOA={false}
                             />
                             <Stack direction="row" spacing={2}>
-                                <Button color="primary" onClick={() => openDialog('bulk')} variant="contained">
+                                <Button color="primary" onClick={() => openKOADialog('bulk')} variant="contained">
                                     Change KOA Affiliation of Selected Articles
                                 </Button>
-                                <Button color="primary" onClick={() => openDialog('stepper')} variant="contained">
+                                <Button color="primary" onClick={() => openKOADialog('stepper')} variant="contained">
                                     Bulk Change KOA Affiliation of Selected Articles
                                 </Button>
                                 <ArticleStepper
                                     selectedArticles={props.selectedArticles}
-                                    isOpen={isDialogOpen}
-                                    handleClose={handleCloseDialog}
+                                    isOpen={isKOADialogOpen}
+                                    handleClose={handleCloseKOADialog}
                                     isKOA={true}
                                 />
                                 <BulkAssigner
                                     selectedArticles={props.selectedArticles}
-                                    isOpen={isStepperOpen}
-                                    handleClose={handleCloseStepper}
+                                    isOpen={isKOAStepperOpen}
+                                    handleClose={handleCloseKOAStepper}
                                     isKOA={true}
                                 />
                             </Stack>

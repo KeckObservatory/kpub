@@ -1010,11 +1010,11 @@ def kpub_import(jsonfile):
           "\nREMINDER: Do a `kpub push` to update the data files in github!" +
           HIGHLIGHTS['END'])
 
-def kpub_set_affiliation(articles, affiliation, last_modifier, koa_affiliation=None):
+def kpub_set_affiliation(articles, last_modifier, affiliation=None, koa_affiliation=None):
 
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
     db = PublicationDB(config)
-    articles = db.set_affiliation(articles, affiliation, last_modifier, koa_affiliation=koa_affiliation)
+    articles = db.set_affiliation(articles, last_modifier, affiliation=affiliation, koa_affiliation=koa_affiliation)
     log.info('Set affiliation for {} articles to {}'.format(len(articles), affiliation))
     return articles
     

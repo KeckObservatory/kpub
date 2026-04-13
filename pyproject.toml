@@ -26,6 +26,9 @@ packages = ["kpub"]
 [tool.setuptools.package-dir]
 "kpub" = "src"
 
+[tool.setuptools.package-data]
+kpub = ["config/*.yaml", "templates/*.md"]
+
 [build-system]
 requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"

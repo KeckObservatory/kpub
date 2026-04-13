@@ -11,7 +11,7 @@ It is designed to run at the W. M. Keck Observatory and may no longer function a
 
 This tool is made possible thanks to the efforts of Geert Barentsen who wrote the original version of [kpub](https://github.com/KeplerGO/kpub) for Kepler/K2.  The major changes here are:
 
-- Code is a library installed with `pip install -e .`
+- Code is a library installed with `pip install .`
 - Code is now config-file driven so it can be used by any facility or institution.
 - Added optional tracking of instrument assocations and associated new plots.
 - Added optional tracking of archive references and associated new plots.

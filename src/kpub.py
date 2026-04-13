@@ -137,7 +137,7 @@ class PublicationDB(MongoDBConnector):
         if self.article_exists(article):
             log.info("{} is already in the database "
                      "-- skipping.".format(article['bibcode']))
-            #return 0
+            return 0
 
 
         # Print paper information to stdout
@@ -166,7 +166,7 @@ class PublicationDB(MongoDBConnector):
         if len(snippits) == 0:
             log.info("No snippets found.  Marking as unrelated.")
             mission = 'unrelated'
-        instruments = "|".join([ x for x in snippits.keys() if x not in missions])
+        instruments = "|".join([ x for x in snippits.keys() if x in self.config['instruments']])
 
         # Get archive ack
         archive = self.get_archive_acknowledgement(snippits)

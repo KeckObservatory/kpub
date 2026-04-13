@@ -61,7 +61,6 @@
     'NIRES',
     'NIRSPEC',
     'OSIRIS',
-    'AO',
     'LGS',
     'NGS',
   ],
@@ -114,7 +113,6 @@
     'OSIRIS': "CYAN",
     'LGS': "CYAN",
     'NGS': "CYAN",
-    'AO': "CYAN",
     'KOA': "YELLOW",
     'Archive': "YELLOW"  
   },

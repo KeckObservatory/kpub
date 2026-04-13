@@ -20,7 +20,14 @@ import logging
 import jinja2
 import pandas as pd
 import pdb
-from .db_mongo_conn import MongoDBConnector 
+
+# Try relative import (when used as installed package or python -m kpub)
+# Fall back to absolute import (when imported directly from source)
+try:
+    from .db_mongo_conn import MongoDBConnector
+except ImportError:
+    from db_mongo_conn import MongoDBConnector
+
 #init logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('KPUB')
@@ -31,7 +38,12 @@ except:
     textract = None
     log.error("Could not import textract!  Will not be able to parse PDF text.")
 
-from . import plot
+# Try relative import (when used as installed package or python -m kpub)
+# Fall back to absolute import (when imported directly from source)
+try:
+    from . import plot
+except ImportError:
+    import plot
 
 
 #misc globals
@@ -812,7 +824,7 @@ def get_word_match_counts_by_pdf(bibcode, words, ads_api_key, blacklist=[]):
     counts = {}
     for word in words:
         counts[word] = {'count': 0, 'snippets': []}
-        for ch in (' ', '/', '\(', '-', ':'):
+        for ch in (' ', '/', r'\(', '-', ':'):
             #find = f"{ch}{word}".lower()
             find = f"{ch}{word}"
             for match in re.finditer(find, text):

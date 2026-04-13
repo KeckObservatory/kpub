@@ -2,7 +2,12 @@
 Entry point for running kpub as a module: python -m kpub
 """
 import sys
-from .kpub import make_parser, kpub_update, kpub_add, kpub_plot, kpub_plot_data, kpub_delete, kpub_import, kpub_export, kpub_stats, kpub_spreadsheet
+# Try relative import (when used as installed package)
+# Fall back to absolute import (when imported directly from source)
+try:
+    from .kpub import make_parser, kpub_update, kpub_add, kpub_plot, kpub_plot_data, kpub_delete, kpub_import, kpub_export, kpub_stats, kpub_spreadsheet
+except ImportError:
+    from kpub import make_parser, kpub_update, kpub_add, kpub_plot, kpub_plot_data, kpub_delete, kpub_import, kpub_export, kpub_stats, kpub_spreadsheet
 import logging
 
 log = logging.getLogger('KPUB')

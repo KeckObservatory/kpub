@@ -5,4 +5,9 @@ import os
 # Useful constants
 PACKAGEDIR = os.path.abspath(os.path.dirname(__file__))
 
-from .kpub import *
+# Try relative import (when used as installed package)
+# Fall back to absolute import (when imported directly from source)
+try:
+    from .kpub import *
+except ImportError:
+    from kpub import *

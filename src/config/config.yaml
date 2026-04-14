@@ -3,6 +3,7 @@
   #NOTE: This is the connection string to your MongoDB instance.
   "kpub": {
       server: "",
+      port: 00000,
       user: "api_user",
       pwd: "",
       database: "kpub",

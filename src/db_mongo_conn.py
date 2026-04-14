@@ -98,12 +98,13 @@ class MongoDBConnector:
             log.warning(f"{article['bibcode']} was already ingested.")
 
     def update_row_affiliation(self, article):
-        """Update a document in the MongoDB collection."""
+        """Update a document's affiliation and archive in the MongoDB collection."""
         try:
             self.collection.update_one({'_id': article['_id']}, {'$set': {
                 'last_modifier': article['last_modifier'],
                 'date_modified': article['date_modified'],
-                'affiliation': article['affiliation']
+                'affiliation': article['affiliation'],
+                'archive': article['archive']
             }})
             log.info(f"Updated {article['bibcode']}")
             return article

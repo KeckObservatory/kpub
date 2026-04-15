@@ -1,6 +1,4 @@
-import { useState } from 'react';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
+import { useState, useEffect } from 'react';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Stepper from '@mui/material/Stepper';
@@ -8,38 +6,65 @@ import StepContent from '@mui/material/StepContent';
 import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 import Typography from '@mui/material/Typography';
-import { type BulkAssignerProps, AffiliationButtonGroup } from './bulk_assigner';
+import { AffiliationButtonGroup } from './bulk_assigner';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import FormControl from '@mui/material/FormControl';
+import FormLabel from '@mui/material/FormLabel';
+import FormGroup from '@mui/material/FormGroup';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Checkbox from '@mui/material/Checkbox';
 import { useStateContext, type Article } from './App';
 import { apiURL, INSTRUMENTS } from './config';
 import Highlighter from 'react-highlight-words';
 import { ads_link } from './article_table';
 
-interface ArticleStepperProps extends BulkAssignerProps { }
+interface ArticleStepperContentProps {
+    selectedArticles: Article[];
+    isKOA: boolean;
+    handleClose: () => void;
+}
 
-export const ArticleStepper = (props: ArticleStepperProps) => {
-    const { selectedArticles, isOpen, handleClose, isKOA } = props;
+export const ArticleStepperContent = (props: ArticleStepperContentProps) => {
+    const { selectedArticles, isKOA, handleClose } = props;
     const [selectedOption, setSelectedOption] = useState('Keck');
+    const [notes, setNotes] = useState('');
+    const [instruments, setInstruments] = useState<string[]>([]);
     const [activeStep, setActiveStep] = useState(0);
     const context = useStateContext()
 
+    const currentArticle = selectedArticles[activeStep];
+
+    useEffect(() => {
+        setInstruments(currentArticle?.instruments ?? []);
+    }, [activeStep]);
+
     const handleSave = async () => {
-        // Perform the save operation here
         console.log('Selected Option:', selectedOption);
         console.log('activeStep:', activeStep)
         console.log('Article to be updated:', selectedArticles[activeStep]);
+
+        const body: any = {
+            [isKOA ? 'koa_affiliation' : 'affiliation']: selectedOption,
+            articles: [selectedArticles[activeStep]],
+        };
+
+        if (notes.trim()) {
+            body.notes = notes;
+        }
+
+        if (instruments.length > 0) {
+            body.instruments = instruments;
+        }
 
         const resp = await fetch(`${apiURL}/update_affiliation`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                [isKOA ? 'koa_affiliation' : 'affiliation']: selectedOption,
-                articles: [selectedArticles[activeStep]],
-            }),
+            body: JSON.stringify(body),
         })
 
         if (resp.ok) {
@@ -58,16 +83,20 @@ export const ArticleStepper = (props: ArticleStepperProps) => {
         }
     }
 
-    
-
-    const handleNext = () => {
-        //TODO: update the selected articles with the selected option
+    const handleNextWithSave = () => {
         setActiveStep((prevActiveStep) => prevActiveStep + 1);
+        setNotes('');
         handleSave()
+    };
+
+    const handleNextWithoutSave = () => {
+        setActiveStep((prevActiveStep) => prevActiveStep + 1);
+        setNotes('');
     };
 
     const handleBack = () => {
         setActiveStep((prevActiveStep) => prevActiveStep - 1);
+        setNotes('');
     };
 
     const step_components = selectedArticles.map((article, index) => {
@@ -116,19 +145,73 @@ export const ArticleStepper = (props: ArticleStepperProps) => {
                                     row={true}
                                     isKOA={isKOA}
                                 />
-                                {/* <Select
-                                    value={selectedOption}
-                                    onChange={(e) => setSelectedOption(e.target.value)}
+                                <TextField
+                                    label="Notes"
+                                    multiline
+                                    rows={3}
                                     fullWidth
-                                >
-                                    <MenuItem value="Keck">Keck</MenuItem>
-                                    <MenuItem value="unknown">Unknown</MenuItem>
-                                    <MenuItem value="unrelated">Unrelated</MenuItem>
-                                </Select> */}
+                                    value={notes}
+                                    onChange={(e) => setNotes(e.target.value)}
+                                    placeholder="Enter any notes about this article..."
+                                    sx={{ mt: 2, mb: 2 }}
+                                />
+                                <FormControl fullWidth sx={{ mb: 2 }}>
+                                    <FormLabel>Instruments</FormLabel>
+                                    <Typography variant="caption" sx={{ mb: 1, color: 'text.secondary' }}>
+                                        Current: {currentArticle.instruments.join(', ') || 'None'}
+                                    </Typography>
+                                    <FormGroup>
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                    checked={instruments.length === INSTRUMENTS.length}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setInstruments(INSTRUMENTS);
+                                                        } else {
+                                                            setInstruments([]);
+                                                        }
+                                                    }}
+                                                />
+                                            }
+                                            label="Select All"
+                                        />
+                                    </FormGroup>
+                                    <FormGroup row>
+                                        {INSTRUMENTS.map((instrument) => (
+                                            <FormControlLabel
+                                                key={instrument}
+                                                control={
+                                                    <Checkbox
+                                                        checked={instruments.includes(instrument)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setInstruments([...instruments, instrument]);
+                                                            } else {
+                                                                setInstruments(
+                                                                    instruments.filter((inst) => inst !== instrument)
+                                                                );
+                                                            }
+                                                        }}
+                                                    />
+                                                }
+                                                label={instrument}
+                                            />
+                                        ))}
+                                    </FormGroup>
+                                </FormControl>
                                 <Button
                                     disabled={selectedOption ? false : true}
                                     variant="contained"
-                                    onClick={handleNext}
+                                    onClick={handleNextWithSave}
+                                    sx={{ mt: 1, mr: 1 }}
+                                >
+                                    {index === selectedArticles.length - 1 ? 'Finish & Save' : 'Continue & Save'}
+                                </Button>
+                                <Button
+                                    disabled={selectedOption ? false : true}
+                                    variant="outlined"
+                                    onClick={handleNextWithoutSave}
                                     sx={{ mt: 1, mr: 1 }}
                                 >
                                     {index === selectedArticles.length - 1 ? 'Finish' : 'Continue'}
@@ -148,11 +231,8 @@ export const ArticleStepper = (props: ArticleStepperProps) => {
         )
     })
 
-    const stepper_title = 'Stepper for verifiying ' + (isKOA ? 'KOA' : 'Keck') + ' article affiliation' 
-
     return (
-        <Dialog maxWidth={'xl'} fullWidth open={isOpen} onClose={handleClose}>
-            <DialogTitle>{stepper_title}</DialogTitle>
+        <>
             <DialogContent>
                 <Stepper activeStep={activeStep} orientation="vertical">
                     {step_components}
@@ -177,6 +257,6 @@ export const ArticleStepper = (props: ArticleStepperProps) => {
                     </Button>
                 </Stack>
             </DialogActions>
-        </Dialog>
+        </>
     )
 }

@@ -5,12 +5,15 @@ import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import { Toolbar } from '@mui/x-data-grid';
 import { useEffect, useMemo, useState } from 'react';
-import { ArticleStepper } from './article_stepper';
-import { BulkAssigner } from './bulk_assigner';
+import { BulkAssignerContent } from './bulk_assigner';
+import { ArticleStepperContent } from './article_stepper';
 import { MonthYearPicker } from './monthyear_picker';
 import Tooltip from '@mui/material/Tooltip';
 import DownloadIcon from '@mui/icons-material/Download';
-
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
 interface EditToolbarProps extends GridToolbarProps, ToolbarPropsOverrides {
     selectedArticles: Article[];
     isAdmin: boolean | null;
@@ -82,89 +85,67 @@ const exportArticlesToCsv = (articles: Article[], columnFields: string[], filena
     URL.revokeObjectURL(url);
 };
 
+interface AffiliationDialogProps {
+    type: 'keckbulk' | 'keckstepper' | 'koabulk' | 'koastepper' | null;
+    selectedArticles: Article[];
+    isOpen: boolean;
+    handleClose: () => void;
+}
+
+const AffiliationDialog = ({ type, selectedArticles, isOpen, handleClose }: AffiliationDialogProps) => {
+    const isKOA = type?.startsWith('koa') ?? false;
+    const isStepper = type?.endsWith('stepper') ?? false;
+
+    const getTitle = () => {
+        if (isStepper) {
+            return `Stepper for verifying ${isKOA ? 'KOA' : 'Keck'} article affiliation`;
+        }
+        return 'Bulk Edit Selected Articles';
+    };
+
+    const maxWidth = isStepper ? 'xl' : 'sm';
+
+    return (
+        <Dialog maxWidth={maxWidth} fullWidth open={isOpen} onClose={handleClose}>
+            <DialogTitle>{getTitle()}</DialogTitle>
+            {isStepper ? (
+                <ArticleStepperContent
+                    selectedArticles={selectedArticles}
+                    isKOA={isKOA}
+                    handleClose={handleClose}
+                />
+            ) : (
+                <BulkAssignerContent
+                    selectedArticles={selectedArticles}
+                    isKOA={isKOA}
+                    handleClose={handleClose}
+                />
+            )}
+        </Dialog>
+    );
+};
+
 
 
 export function EditToolbar(props: EditToolbarProps) {
-    const [isKOADialogOpen, setIsKOADialogOpen] = useState(false);
-    const [isKOAStepperOpen, setIsKOAStepperOpen] = useState(false);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [isStepperOpen, setIsStepperOpen] = useState(false);
-    const [_, setIsPlotOpen] = useState(false);
+    const [menuOpen, setMenuOpen] = useState<null | HTMLElement>(null);
+    const [activeDialog, setActiveDialog] = useState<'keckbulk' | 'keckstepper' | 'koabulk' | 'koastepper' | null>(null);
 
-    const openDialog = (type: string) => {
-        if (type === 'bulk') {
-            handleOpenDialog()
-        } else if (type === 'stepper') {
-            handleOpenStepper()
-        }
-        else if (type === 'plot') {
-            handleOpenPlot()
-        }
+    const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+        setMenuOpen(event.currentTarget);
     }
 
-    const openKOADialog = (type: string) => {
-        if (type === 'bulk') {
-            handleOpenKOADialog()
-        } else if (type === 'stepper') {
-            handleOpenKOAStepper()
-        }
+    const handleMenuClose = () => {
+        setMenuOpen(null);
     }
 
-
-    const handleOpenPlot = () => {
-        setIsDialogOpen(false);
-        setIsStepperOpen(false);
-        setIsKOADialogOpen(false);
-        setIsKOAStepperOpen(false);
-        setIsPlotOpen(true);
-    };
-
-    const handleOpenDialog = () => {
-        setIsDialogOpen(true);
-        setIsStepperOpen(false);
-        setIsKOADialogOpen(false);
-        setIsKOAStepperOpen(false);
-        setIsPlotOpen(false);
+    const handleOpenDialog = (dialogType: 'keckbulk' | 'keckstepper' | 'koabulk' | 'koastepper') => {
+        setActiveDialog(dialogType);
+        handleMenuClose();
     };
 
     const handleCloseDialog = () => {
-        setIsDialogOpen(false);
-    };
-
-    const handleOpenStepper = () => {
-        setIsStepperOpen(true);
-        setIsDialogOpen(false);
-        setIsKOADialogOpen(false);
-        setIsKOAStepperOpen(false);
-        setIsPlotOpen(false);
-    };
-
-    const handleCloseStepper = () => {
-        setIsStepperOpen(false);
-    };
-
-    const handleOpenKOADialog = () => {
-        setIsDialogOpen(false);
-        setIsStepperOpen(false);
-        setIsKOADialogOpen(true);
-        setIsKOAStepperOpen(false);
-        setIsPlotOpen(false);
-    };
-
-    const handleCloseKOADialog = () => {
-        setIsKOADialogOpen(false);
-    };
-
-    const handleOpenKOAStepper = () => {
-        setIsStepperOpen(false);
-        setIsDialogOpen(false);
-        setIsKOADialogOpen(false);
-        setIsKOAStepperOpen(true);
-        setIsPlotOpen(false);
-    };
-
-    const handleCloseKOAStepper = () => {
-        setIsKOAStepperOpen(false);
+        setActiveDialog(null);
     };
 
 
@@ -173,48 +154,38 @@ export function EditToolbar(props: EditToolbarProps) {
             <Stack sx={{ marginBottom: '20px' }} direction="row" spacing={5}>
                 <MonthYearPicker />
                 {props.isAdmin && (
-                    <Stack direction="column" spacing={2}>
-                        <Stack direction="row" spacing={2}>
-                            <Button color="primary" onClick={() => openDialog('bulk')} variant="contained">
-                                Change Keck Affiliation of Selected Articles
+                    <>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <Button color="primary" onClick={handleMenuClick} variant="contained">
+                                Admin Actions
                             </Button>
-                            <Button color="primary" onClick={() => openDialog('stepper')} variant="contained">
-                                Bulk Change Keck Affiliation of Selected Articles
-                            </Button>
-                            <ArticleStepper
-                                selectedArticles={props.selectedArticles}
-                                isOpen={isDialogOpen}
-                                handleClose={handleCloseDialog}
-                                isKOA={false}
-                            />
-                            <BulkAssigner
-                                selectedArticles={props.selectedArticles}
-                                isOpen={isStepperOpen}
-                                handleClose={handleCloseStepper}
-                                isKOA={false}
-                            />
-                            <Stack direction="row" spacing={2}>
-                                <Button color="primary" onClick={() => openKOADialog('bulk')} variant="contained">
+                            <Menu
+                                anchorEl={menuOpen}
+                                open={Boolean(menuOpen)}
+                                onClose={handleMenuClose}
+                            >
+                                <MenuItem onClick={() => handleOpenDialog('keckstepper')}>
+                                    Change Keck Affiliation of Selected Articles
+                                </MenuItem>
+                                <MenuItem onClick={() => handleOpenDialog('keckbulk')}>
+                                    Bulk Change Keck Affiliation of Selected Articles
+                                </MenuItem>
+                                <MenuItem onClick={() => handleOpenDialog('koastepper')}>
                                     Change KOA Affiliation of Selected Articles
-                                </Button>
-                                <Button color="primary" onClick={() => openKOADialog('stepper')} variant="contained">
+                                </MenuItem>
+                                <MenuItem onClick={() => handleOpenDialog('koabulk')}>
                                     Bulk Change KOA Affiliation of Selected Articles
-                                </Button>
-                                <ArticleStepper
-                                    selectedArticles={props.selectedArticles}
-                                    isOpen={isKOADialogOpen}
-                                    handleClose={handleCloseKOADialog}
-                                    isKOA={true}
-                                />
-                                <BulkAssigner
-                                    selectedArticles={props.selectedArticles}
-                                    isOpen={isKOAStepperOpen}
-                                    handleClose={handleCloseKOAStepper}
-                                    isKOA={true}
-                                />
-                            </Stack>
-                        </Stack>
-                    </Stack>
+                                </MenuItem>
+                            </Menu>
+                        </div>
+
+                        <AffiliationDialog
+                            type={activeDialog}
+                            selectedArticles={props.selectedArticles}
+                            isOpen={activeDialog !== null}
+                            handleClose={handleCloseDialog}
+                        />
+                    </>
                 )}
                 <Tooltip title={props.selectedArticles.length > 0 ? "Download selected articles as CSV" : "Download all articles as CSV"}>
                     <Button
@@ -222,7 +193,7 @@ export function EditToolbar(props: EditToolbarProps) {
                         startIcon={<DownloadIcon />}
                         onClick={() => {
                             const articlesToExport = props.selectedArticles.length > 0 ? props.selectedArticles : props.allArticles;
-                            const columnFields = props.isAdmin 
+                            const columnFields = props.isAdmin
                                 ? (articlesToExport.length > 0 ? Object.keys(articlesToExport[0]) : [])
                                 : columns.map(col => col.field);
                             exportArticlesToCsv(articlesToExport, columnFields, 'keck-articles.csv');

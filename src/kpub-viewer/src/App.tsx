@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { handleTheme } from './theme'
 import { StringParam, useQueryParam, withDefault } from 'use-query-params'
@@ -6,6 +7,7 @@ import { CssBaseline, ThemeProvider } from '@mui/material'
 import { ArticleTable } from './article_table'
 import { TopBar } from './top_bar'
 import { Box } from '@mui/material'
+import mockData from './mockData.json'
 
 // export const apiURL = 'http://vm-dev-appserver/api/kpub'
 
@@ -100,18 +102,37 @@ function App() {
 
   const fetchData = async () => {
     console.log(apiURL)
-    const response = await fetch(`${apiURL}/get_table?monthyear=${monthyear}`)
-    if (!response.ok) {
-      console.warn('Network response was not ok')
-      throw new Error('Network response was not ok')
+    
+    // Set admin mode upfront in DEV
+    if (isAdmin.current === null) {
+      isAdmin.current = import.meta.env.MODE === 'development' ? true : null
     }
-    else {
+
+    // In dev mode, use mock data
+    if (import.meta.env.MODE === 'development') {
+      console.log('DEV mode: Using mock articles data')
+      isAdmin.current = true
+      setState((prevState) => ({
+        ...prevState,
+        articles: mockData.articles as any as Array<Article>,
+      }))
+      console.log('Loaded mock articles:', mockData.articles)
+      return
+    }
+
+    try {
+      const response = await fetch(`${apiURL}/get_table?monthyear=${monthyear}`)
+      if (!response.ok) {
+        console.warn('Network response was not ok')
+        throw new Error('Network response was not ok')
+      }
+      
       const resp = await response.json()
       if (isAdmin.current === null) {
         isAdmin.current = resp.isAdmin
       }
 
-        if (!isAdmin.current) { //If not admin, only show Keck affiliations
+      if (isAdmin.current === false) { //If not admin, only show Keck affiliations
         resp.articles = resp.articles.filter((a: Article) => a.affiliation.toLowerCase() === 'keck')
       }
       setState((prevState) => {
@@ -121,6 +142,9 @@ function App() {
         }
       })
       console.log('Fetched articles:', resp.articles)
+    } catch (error) {
+      console.error('Error fetching data:', error)
+      throw error
     }
   }
 

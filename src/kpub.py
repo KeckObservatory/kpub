@@ -236,6 +236,7 @@ class PublicationDB(MongoDBConnector):
                         last_modifier='kpub', 
                         affiliation=None, 
                         koa_affiliation=None,
+                        instruments=None,
                         note=None):
         updated_articles = []
         for article in articles:
@@ -245,6 +246,8 @@ class PublicationDB(MongoDBConnector):
                 article['archive'] = koa_affiliation
             if affiliation is not None:
                 article['affiliation'] = affiliation
+            if instruments is not None:
+                article['instruments'] = instruments
             if note is not None:
                 article['note'] = note 
             article['last_modifier'] = last_modifier
@@ -1020,6 +1023,7 @@ def kpub_set_affiliation(articles,
                          last_modifier, 
                          affiliation=None, 
                          koa_affiliation=None,
+                         instruments=None,
                          note=None):
 
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
@@ -1028,6 +1032,7 @@ def kpub_set_affiliation(articles,
                                   last_modifier, 
                                   affiliation=affiliation, 
                                   koa_affiliation=koa_affiliation,
+                                  instruments=instruments,
                                   note=note)
     log.info('Set affiliation for {} articles to {}'.format(len(articles), affiliation))
     return articles

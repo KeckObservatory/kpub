@@ -11,10 +11,12 @@ import { MonthYearPicker } from './monthyear_picker';
 import { ExportCsv } from '@mui/x-data-grid';
 import Tooltip from '@mui/material/Tooltip';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import DownloadIcon from '@mui/icons-material/Download';
 
 interface EditToolbarProps extends GridToolbarProps, ToolbarPropsOverrides {
     selectedArticles: Article[];
     isAdmin: boolean | null;
+    allArticles: Article[];
 }
 
 export const ads_link = (x: string) => `${ADS_URL}/abs/${x}/abstract`
@@ -44,6 +46,43 @@ export const adminColumns = [
     { field: 'last_modifier', headerName: 'LAST_MODIFIER', width: 150 },
     { field: 'has_acknowledgement', headerName: 'Acknowledgement?', width: 70 }
 ]
+
+const exportArticlesToCsv = (articles: Article[], columnFields: string[], filename: string = 'articles.csv') => {
+    if (articles.length === 0) return;
+
+    // Create CSV header
+    const headers = columnFields.join(',');
+
+    // Create CSV rows
+    const rows = articles.map(article => {
+        return columnFields.map(field => {
+            const value = (article as any)[field];
+            // Handle null/undefined
+            if (value === null || value === undefined) return '';
+            // Quote fields that contain commas or quotes
+            const strValue = String(value);
+            if (strValue.includes(',') || strValue.includes('"') || strValue.includes('\n')) {
+                return `"${strValue.replace(/"/g, '""')}"`;
+            }
+            return strValue;
+        }).join(',');
+    });
+
+    // Combine header and rows
+    const csv = [headers, ...rows].join('\n');
+
+    // Create Blob and download
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+};
 
 
 
@@ -184,6 +223,21 @@ export function EditToolbar(props: EditToolbarProps) {
                         <FileDownloadIcon fontSize="small" />
                     </ExportCsv>
                 </Tooltip>
+                <Tooltip title={props.selectedArticles.length > 0 ? "Download selected articles as CSV" : "Download all articles as CSV"}>
+                    <Button
+                        size="small"
+                        startIcon={<DownloadIcon />}
+                        onClick={() => {
+                            const articlesToExport = props.selectedArticles.length > 0 ? props.selectedArticles : props.allArticles;
+                            const columnFields = props.isAdmin 
+                                ? (articlesToExport.length > 0 ? Object.keys(articlesToExport[0]) : [])
+                                : columns.map(col => col.field);
+                            exportArticlesToCsv(articlesToExport, columnFields, 'keck-articles.csv');
+                        }}
+                    >
+                        Export {props.selectedArticles.length > 0 ? 'Selected' : 'All'}
+                    </Button>
+                </Tooltip>
             </Stack>
         </Toolbar>
     );
@@ -245,7 +299,8 @@ export const ArticleTable = (props: Props) => {
             slotProps={{
                 toolbar: {
                     selectedArticles: selectedArticles,
-                    isAdmin: isAdmin
+                    isAdmin: isAdmin,
+                    allArticles: articles ?? []
                 } as EditToolbarProps,
             }}
             showToolbar

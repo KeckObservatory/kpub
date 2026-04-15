@@ -242,7 +242,12 @@ class PublicationDB(MongoDBConnector):
         else: 
             return False 
 
-    def set_affiliation(self, articles, last_modifier='kpub', affiliation=None, koa_affiliation=None):
+    def set_affiliation(self, articles, 
+                        last_modifier='kpub', 
+                        affiliation=None, 
+                        koa_affiliation=None,
+                        instruments=None,
+                        note=None):
         updated_articles = []
         for article in articles:
             # Get the bibcode
@@ -251,6 +256,10 @@ class PublicationDB(MongoDBConnector):
                 article['archive'] = koa_affiliation
             if affiliation is not None:
                 article['affiliation'] = affiliation
+            if instruments is not None:
+                article['instruments'] = instruments
+            if note is not None:
+                article['note'] = note 
             article['last_modifier'] = last_modifier
             # Save the changes to the database
             updated_article = self.update_row_affiliation(article)
@@ -1020,11 +1029,21 @@ def kpub_import(jsonfile):
           "\nREMINDER: Do a `kpub push` to update the data files in github!" +
           HIGHLIGHTS['END'])
 
-def kpub_set_affiliation(articles, last_modifier, affiliation=None, koa_affiliation=None):
+def kpub_set_affiliation(articles, 
+                         last_modifier, 
+                         affiliation=None, 
+                         koa_affiliation=None,
+                         instruments=None,
+                         note=None):
 
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
     db = PublicationDB(config)
-    articles = db.set_affiliation(articles, last_modifier, affiliation=affiliation, koa_affiliation=koa_affiliation)
+    articles = db.set_affiliation(articles, 
+                                  last_modifier, 
+                                  affiliation=affiliation, 
+                                  koa_affiliation=koa_affiliation,
+                                  instruments=instruments,
+                                  note=note)
     log.info('Set affiliation for {} articles to {}'.format(len(articles), affiliation))
     return articles
     

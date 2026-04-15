@@ -1,0 +1,116 @@
+{
+  "articles": [
+    {
+      "_id": "mock-1",
+      "title": ["Discovery of Water in Exoplanet Atmospheres using MOSFIRE"],
+      "year": 2023,
+      "instruments": ["MOSFIRE", "NIRES"],
+      "archive": "1",
+      "bibcode": "2023ApJ...123..456A",
+      "abstract": "We present the discovery of water vapor in the atmosphere of a distant exoplanet using the MOSFIRE infrared spectrograph at Keck Observatory.",
+      "publisher": "The Astrophysical Journal",
+      "aff": ["University of California, Berkeley", "Keck Observatory"],
+      "last_modifier": "admin",
+      "date_modified": "2024-01-15",
+      "month": 3,
+      "snippits": {
+        "water": {
+          "count": 5,
+          "snippets": [
+            "detection of water vapor",
+            "water spectral features",
+            "water absorption bands"
+          ]
+        },
+        "exoplanet": {
+          "count": 3,
+          "snippets": [
+            "exoplanet atmosphere",
+            "distant exoplanet system"
+          ]
+        }
+      },
+      "affiliation": "Keck",
+      "date": "2023-03-15",
+      "author": ["Smith, J.", "Johnson, M.", "Williams, A."],
+      "first_author": "Smith, J.",
+      "doctype": "article",
+      "reference": ["2022ApJ...100..200B", "2021ApJ...99..400C"],
+      "property": [],
+      "citation_count": 25,
+      "keck_score": 0.95
+    },
+    {
+      "_id": "mock-2",
+      "title": ["Kinematic Study of Star Clusters with LRIS"],
+      "year": 2023,
+      "instruments": ["LRIS"],
+      "archive": "0",
+      "bibcode": "2023MNRAS.520..789B",
+      "abstract": "A comprehensive kinematic analysis of nearby star clusters using long-slit spectroscopy with LRIS.",
+      "publisher": "Monthly Notices of the Royal Astronomical Society",
+      "aff": ["Max Planck Institute for Astronomy"],
+      "last_modifier": "user1",
+      "date_modified": "2024-02-20",
+      "month": 5,
+      "snippits": {
+        "kinematics": {
+          "count": 4,
+          "snippets": [
+            "kinematic analysis",
+            "velocity measurements"
+          ]
+        },
+        "clusters": {
+          "count": 6,
+          "snippets": [
+            "star cluster dynamics",
+            "cluster members"
+          ]
+        }
+      },
+      "affiliation": "unknown",
+      "date": "2023-05-10",
+      "author": ["Brown, K.", "Davis, R."],
+      "first_author": "Brown, K.",
+      "doctype": "article",
+      "reference": ["2022MNRAS.510..234A"],
+      "property": [],
+      "citation_count": 8,
+      "keck_score": 0.45
+    },
+    {
+      "_id": "mock-3",
+      "title": ["Black Hole Mass Estimation using DEIMOS"],
+      "year": 2024,
+      "instruments": ["DEIMOS", "LRIS"],
+      "archive": "1",
+      "bibcode": "2024ApJ...950..123C",
+      "abstract": "Accurate measurement of black hole masses in galactic nuclei using multi-slit spectroscopy.",
+      "publisher": "The Astrophysical Journal",
+      "aff": ["MIT", "Caltech"],
+      "last_modifier": "admin",
+      "date_modified": "2024-03-01",
+      "month": 1,
+      "snippits": {
+        "black hole": {
+          "count": 7,
+          "snippets": [
+            "black hole mass",
+            "supermassive black hole",
+            "black hole formation"
+          ]
+        }
+      },
+      "affiliation": "Keck",
+      "date": "2024-01-20",
+      "author": ["Chen, L.", "Park, S.", "Adams, M."],
+      "first_author": "Chen, L.",
+      "doctype": "article",
+      "reference": ["2023ApJ...900..500B", "2023MNRAS.525..100D"],
+      "property": [],
+      "citation_count": 42,
+      "keck_score": 0.88
+    }
+  ]
+}

@@ -158,7 +158,7 @@ export const ArticleStepperContent = (props: ArticleStepperContentProps) => {
                                 <FormControl fullWidth sx={{ mb: 2 }}>
                                     <FormLabel>Instruments</FormLabel>
                                     <Typography variant="caption" sx={{ mb: 1, color: 'text.secondary' }}>
-                                        Current: {currentArticle.instruments.join(', ') || 'None'}
+                                        Current: {currentArticle?.instruments?.join(', ') || 'None'}
                                     </Typography>
                                     <FormGroup>
                                         <FormControlLabel

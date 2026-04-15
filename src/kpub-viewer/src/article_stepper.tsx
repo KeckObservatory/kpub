@@ -30,7 +30,7 @@ interface ArticleStepperContentProps {
 export const ArticleStepperContent = (props: ArticleStepperContentProps) => {
     const { selectedArticles, isKOA, handleClose } = props;
     const [selectedOption, setSelectedOption] = useState('Keck');
-    const [notes, setNotes] = useState('');
+    const [note, setNote] = useState('');
     const [instruments, setInstruments] = useState<string[]>([]);
     const [activeStep, setActiveStep] = useState(0);
     const context = useStateContext()
@@ -51,8 +51,8 @@ export const ArticleStepperContent = (props: ArticleStepperContentProps) => {
             articles: [selectedArticles[activeStep]],
         };
 
-        if (notes.trim()) {
-            body.notes = notes;
+        if (note.trim()) {
+            body.note = note;
         }
 
         if (instruments.length > 0) {
@@ -85,18 +85,18 @@ export const ArticleStepperContent = (props: ArticleStepperContentProps) => {
 
     const handleNextWithSave = () => {
         setActiveStep((prevActiveStep) => prevActiveStep + 1);
-        setNotes('');
+        setNote('');
         handleSave()
     };
 
     const handleNextWithoutSave = () => {
         setActiveStep((prevActiveStep) => prevActiveStep + 1);
-        setNotes('');
+        setNote('');
     };
 
     const handleBack = () => {
         setActiveStep((prevActiveStep) => prevActiveStep - 1);
-        setNotes('');
+        setNote('');
     };
 
     const step_components = selectedArticles.map((article, index) => {
@@ -146,13 +146,13 @@ export const ArticleStepperContent = (props: ArticleStepperContentProps) => {
                                     isKOA={isKOA}
                                 />
                                 <TextField
-                                    label="Notes"
+                                    label="Note"
                                     multiline
                                     rows={3}
                                     fullWidth
-                                    value={notes}
-                                    onChange={(e) => setNotes(e.target.value)}
-                                    placeholder="Enter any notes about this article..."
+                                    value={note}
+                                    onChange={(e) => setNote(e.target.value)}
+                                    placeholder="Enter any notes about this article"
                                     sx={{ mt: 2, mb: 2 }}
                                 />
                                 <FormControl fullWidth sx={{ mb: 2 }}>

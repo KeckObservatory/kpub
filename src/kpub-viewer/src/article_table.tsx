@@ -1,4 +1,4 @@
-import { DataGrid, ToolbarButton, type GridColDef, type GridRowSelectionModel, type GridToolbarProps, type ToolbarPropsOverrides } from '@mui/x-data-grid';
+import { DataGrid, type GridColDef, type GridRowSelectionModel, type GridToolbarProps, type ToolbarPropsOverrides } from '@mui/x-data-grid';
 import { type Article } from './App';
 import { ADS_URL } from './config'
 import Stack from '@mui/material/Stack';
@@ -8,9 +8,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ArticleStepper } from './article_stepper';
 import { BulkAssigner } from './bulk_assigner';
 import { MonthYearPicker } from './monthyear_picker';
-import { ExportCsv } from '@mui/x-data-grid';
 import Tooltip from '@mui/material/Tooltip';
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import DownloadIcon from '@mui/icons-material/Download';
 
 interface EditToolbarProps extends GridToolbarProps, ToolbarPropsOverrides {
@@ -218,11 +216,6 @@ export function EditToolbar(props: EditToolbarProps) {
                         </Stack>
                     </Stack>
                 )}
-                <Tooltip title="Download as CSV">
-                    <ExportCsv render={<ToolbarButton />}>
-                        <FileDownloadIcon fontSize="small" />
-                    </ExportCsv>
-                </Tooltip>
                 <Tooltip title={props.selectedArticles.length > 0 ? "Download selected articles as CSV" : "Download all articles as CSV"}>
                     <Button
                         size="small"

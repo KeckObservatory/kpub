@@ -1093,14 +1093,20 @@ def kpub_set_affiliation(articles,
     return articles
     
 
-def kpub_export(monthyear, begin_year=None, filename=None, affiliation=None, csv=None):
-    """Export the database as JSON format."""
+def kpub_export(monthyear, begin_year=None, filename=None, affiliation=None, csv=None, export_all=False):
+    """Export the database as JSON format (or CSV if specified)."""
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
     db = PublicationDB(config)
-    year, month = monthyear.split('-') if '-' in monthyear else (monthyear, None)
-    year, month = int(year), int(month) if month else None
-    begin_year = int(begin_year) if begin_year else None
-    articles = db.get_articles(begin_year=begin_year, end_year=year, month=month, affiliation=affiliation)
+    
+    if export_all:
+        # Export entire database without filters
+        articles = db.get_articles()
+    else:
+        year, month = monthyear.split('-') if '-' in monthyear else (monthyear, None)
+        year, month = int(year), int(month) if month else None
+        begin_year = int(begin_year) if begin_year else None
+        articles = db.get_articles(begin_year=begin_year, end_year=year, month=month, affiliation=affiliation)
+    
     if not articles:
         log.info('No rows found.')
         return []
@@ -1249,6 +1255,8 @@ def make_parser():
                         help="Filename to export to.")
     export_parser.add_argument('-csv', action='store_true',
                         help="Export as CSV instead of JSON.")
+    export_parser.add_argument('--all', action='store_true',
+                        help="Export all articles in database (ignores monthyear and begin_year filters).")
 
     stats_parser = subparsers.add_parser('stats', help='Get the publication statistics.')
 
@@ -1268,7 +1276,7 @@ if __name__ == "__main__":
     elif cmd == 'plot_data': kpub_plot_data(margs.plotname, margs.instruments, margs.year_begin, margs.extrapolate)
     elif cmd == 'delete':    kpub_delete(margs.bibcode)
     elif cmd == 'import':    kpub_import(margs.jsonfile)
-    elif cmd == 'export':    kpub_export(margs.monthyear, margs.begin_year, margs.filename, margs.affiliation, margs.csv)
+    elif cmd == 'export':    kpub_export(margs.monthyear, margs.begin_year, margs.filename, margs.affiliation, margs.csv, getattr(margs, 'all', False))
     elif cmd == 'stats':     kpub_stats()
     elif cmd == 'update_citations': kpub_update_citations(margs.year)
     elif cmd == 'spreadsheet': kpub_spreadsheet(margs.filename)

@@ -890,11 +890,14 @@ def update_citations(year):
     pubdb = PublicationDB(config)
     ads_api_key = config.get('ADS_API_KEY')
     articles = pubdb.query(year=year)
-    articles = [article for article in articles if article.get('affiliation') == 'keck']
+    articles = [article for article in articles if article.get('affiliation') == 'keck' or article.get('ilabel') == 'keck']
     log.info(f"Updating citation counts for {len(articles)} articles published in {year}...")
     for article in articles:
         bibcode = article['bibcode']
         citation_fields = get_citation_fields(bibcode, ads_api_key)
+        if not citation_fields:
+            log.warning(f"Could not get citation fields for {bibcode}. Skipping.")
+            continue
         pubdb.update_citation_fields(bibcode, citation_fields)
 
 def get_citation_fields(bibcode, ads_api_key):
@@ -906,7 +909,7 @@ def get_citation_fields(bibcode, ads_api_key):
         return article_fields 
     except (KeyError, IndexError):
         log.warning(f"{bibcode}: no citation_count")
-        return 0
+        return False
 
 
 def get_pdf_text(outfile):
@@ -1214,7 +1217,7 @@ def make_parser():
                         help='Extrapolate the data to the current date.')
 
     citations_parser = subparsers.add_parser('update_citations', help='Update citation fields for publications.')
-    citations_parser.add_argument('year', nargs='?', default=None,
+    citations_parser.add_argument('year', nargs='?', default=None, type=int,
                         help='Year to update citations for. e.g. "2020"')
 
 

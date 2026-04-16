@@ -96,6 +96,20 @@ class MongoDBConnector:
             log.info(f"Inserted {article['bibcode']}")
         except pymongo.errors.DuplicateKeyError:
             log.warning(f"{article['bibcode']} was already ingested.")
+    
+    
+    def update_citation_fields(self, bibcode, citation_fields):
+        """Update a document's citation fields in the MongoDB collection."""
+        try:
+            updated_fields = {
+                'last_modifier': 'kpub',
+                'date_modified': datetime.datetime.now(),
+                **citation_fields
+            }
+            self.collection.update_one({'_id': bibcode}, {'$set': updated_fields})
+            log.info(f"Updated citation fields for {bibcode}")
+        except Exception as e:
+            log.error(f"Error updating citation count for {bibcode}: {e}")
 
     def update_row_affiliation(self, article):
         """Update a document's affiliation and archive in the MongoDB collection."""

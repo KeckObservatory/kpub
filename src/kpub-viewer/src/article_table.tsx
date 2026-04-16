@@ -41,6 +41,7 @@ export const adminColumns = [
     { field: 'archive', headerName: 'KOA?', width: 70 },
     { field: 'affiliation', headerName: 'AFFILIATION', width: 150 },
     { field: 'reason', headerName: 'REASON', width: 150 },
+    { field: 'note', headerName: 'NOTE', width: 150 },
     { field: 'ilabel', headerName: 'ILABEL', width: 150 },
     { field: 'keck_score', headerName: 'KECK_SCORE', width: 100, valueFormatter: (value: number) => value != null ? value.toFixed(3) : '' },
     { field: 'date_modified', headerName: 'DATE_MODIFIED', width: 150 },

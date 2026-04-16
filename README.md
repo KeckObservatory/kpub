@@ -50,7 +50,7 @@ pip install textract pyyaml requests jinja2 pymongo matplotlib bokeh
 5) Install kpub as a module:
 
 ```
-pip install -e .
+pip install .
 ```
 
 ## Usage
@@ -65,6 +65,7 @@ Add `--help` to any command below to get full usage instructions
 * `kpub plot_data` creates the data needed to generate plots (used by the frontend);
 * `kpub stats` creates publication stats in markdown format and saves to data/output/ dir;
 * `kpub spreadsheet` exports the publications to an Excel spreadsheet
+* `kpub update_citations` for a given year, update the cite_read_boost, citation_count and citation fields
 
 ## Example use
 

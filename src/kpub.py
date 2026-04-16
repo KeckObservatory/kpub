@@ -1100,7 +1100,7 @@ def kpub_export(monthyear, begin_year=None, filename=None, affiliation=None, csv
     
     if export_all:
         # Export entire database without filters
-        articles = db.get_articles()
+        articles = db.get_articles(affiliation=affiliation)
     else:
         year, month = monthyear.split('-') if '-' in monthyear else (monthyear, None)
         year, month = int(year), int(month) if month else None

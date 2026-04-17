@@ -123,7 +123,7 @@ class MongoDBConnector:
                 updated_fields['archive'] = article['archive']
             if article.get('note'):
                 updated_fields['note'] = article['note']
-            if article.get('instruments'):
+            if article.get('instruments', None) is not None: # sometimes can be an empty array.
                 updated_fields['instruments'] = article['instruments']
             self.collection.update_one({'_id': article['_id']}, {'$set': updated_fields})
             log.info(f"Updated {article['bibcode']}")

@@ -96,15 +96,36 @@ class MongoDBConnector:
             log.info(f"Inserted {article['bibcode']}")
         except pymongo.errors.DuplicateKeyError:
             log.warning(f"{article['bibcode']} was already ingested.")
+    
+    
+    def update_citation_fields(self, bibcode, citation_fields):
+        """Update a document's citation fields in the MongoDB collection."""
+        try:
+            updated_fields = {
+                'last_modifier': 'kpub',
+                'date_modified': datetime.datetime.now(),
+                **citation_fields
+            }
+            self.collection.update_one({'_id': bibcode}, {'$set': updated_fields})
+            log.info(f"Updated citation fields for {bibcode}")
+        except Exception as e:
+            log.error(f"Error updating citation count for {bibcode}: {e}")
 
     def update_row_affiliation(self, article):
-        """Update a document in the MongoDB collection."""
+        """Update a document's affiliation and archive in the MongoDB collection."""
         try:
-            self.collection.update_one({'_id': article['_id']}, {'$set': {
+            updated_fields = {
                 'last_modifier': article['last_modifier'],
                 'date_modified': article['date_modified'],
-                'affiliation': article['affiliation']
-            }})
+                'affiliation': article['affiliation'],
+            }
+            if article.get('archive'):
+                updated_fields['archive'] = article['archive']
+            if article.get('note'):
+                updated_fields['note'] = article['note']
+            if article.get('instruments', None) is not None: # sometimes can be an empty array.
+                updated_fields['instruments'] = article['instruments']
+            self.collection.update_one({'_id': article['_id']}, {'$set': updated_fields})
             log.info(f"Updated {article['bibcode']}")
             return article
         except Exception as e:

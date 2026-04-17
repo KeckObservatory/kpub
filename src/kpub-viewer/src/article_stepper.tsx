@@ -55,9 +55,8 @@ export const ArticleStepperContent = (props: ArticleStepperContentProps) => {
             body.note = note;
         }
 
-        if (instruments.length > 0) {
-            body.instruments = instruments.filter((inst) => INSTRUMENTS.includes(inst));
-        }
+        // always send somthing in body.instruments to trigger backend update, even if it's an empty array after filtering out invalid instruments
+        body.instruments = instruments ? instruments.filter((inst) => INSTRUMENTS.includes(inst)) : [];
 
         const resp = await fetch(`${apiURL}/update_affiliation`, {
             method: 'PUT',

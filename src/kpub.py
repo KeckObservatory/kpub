@@ -134,7 +134,6 @@ class PublicationDB(MongoDBConnector):
             affiliation = 'keck' # pretty sure its keck
         if len(snippits) == 0 and not 'keck' in mission:
             reason = "No instrument names found in snippets."
-            affiliation = 'unrelated' # pretty sure its unrelated
         return affiliation, hasAcknowledgement, reason
 
     def add_article(self, article, statusmsg="", interactive=False):

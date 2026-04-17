@@ -122,7 +122,7 @@ class PublicationDB(MongoDBConnector):
         
         acknowledgement = self.config.get('acknowledgement', [])
         keys = snippits.keys()
-        affiliation = 'unrelated' # default
+        affiliation = 'unknown' # default
         hasAcknowledgement = False
         reason = "Neither instr nor ack found."
         if any(x in keys for x in acknowledgement):

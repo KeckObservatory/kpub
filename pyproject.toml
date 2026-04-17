@@ -20,12 +20,6 @@ dependencies = [
 ]
 
 
-[tool.setuptools]
-packages = ["kpub"]
-
-[tool.setuptools.package-dir]
-"kpub" = "src"
-
 [build-system]
-requires = ["setuptools>=45", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

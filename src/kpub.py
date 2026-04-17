@@ -22,7 +22,7 @@ import logging
 import jinja2
 import pandas as pd
 import pdb
-from .db_mongo_conn import MongoDBConnector 
+from db_mongo_conn import MongoDBConnector 
 #init logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('KPUB')
@@ -33,7 +33,7 @@ except:
     textract = None
     log.error("Could not import textract!  Will not be able to parse PDF text.")
 
-from . import plot
+import plot
 
 
 #misc globals

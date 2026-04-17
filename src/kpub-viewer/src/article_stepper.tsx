@@ -38,7 +38,7 @@ export const ArticleStepperContent = (props: ArticleStepperContentProps) => {
     const currentArticle = selectedArticles[activeStep];
 
     useEffect(() => {
-        setInstruments(currentArticle?.instruments ?? []);
+        setInstruments((currentArticle?.instruments ?? []).filter((inst) => INSTRUMENTS.includes(inst)));
     }, [activeStep]);
 
     const handleSave = async () => {
@@ -56,7 +56,7 @@ export const ArticleStepperContent = (props: ArticleStepperContentProps) => {
         }
 
         if (instruments.length > 0) {
-            body.instruments = instruments;
+            body.instruments = instruments.filter((inst) => INSTRUMENTS.includes(inst));
         }
 
         const resp = await fetch(`${apiURL}/update_affiliation`, {
@@ -186,10 +186,10 @@ export const ArticleStepperContent = (props: ArticleStepperContentProps) => {
                                                         checked={instruments.includes(instrument)}
                                                         onChange={(e) => {
                                                             if (e.target.checked) {
-                                                                setInstruments([...instruments, instrument]);
+                                                                setInstruments([...instruments, instrument].filter((inst) => INSTRUMENTS.includes(inst)));
                                                             } else {
                                                                 setInstruments(
-                                                                    instruments.filter((inst) => inst !== instrument)
+                                                                    instruments.filter((inst) => inst !== instrument).filter((inst) => INSTRUMENTS.includes(inst))
                                                                 );
                                                             }
                                                         }}

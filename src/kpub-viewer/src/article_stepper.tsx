@@ -38,7 +38,7 @@ export const ArticleStepperContent = (props: ArticleStepperContentProps) => {
     const currentArticle = selectedArticles[activeStep];
 
     useEffect(() => {
-        setInstruments(currentArticle?.instruments ?? []);
+        setInstruments((currentArticle?.instruments ?? []).filter((inst) => INSTRUMENTS.includes(inst)));
     }, [activeStep]);
 
     const handleSave = async () => {
@@ -55,9 +55,8 @@ export const ArticleStepperContent = (props: ArticleStepperContentProps) => {
             body.note = note;
         }
 
-        if (instruments.length > 0) {
-            body.instruments = instruments;
-        }
+        // always send somthing in body.instruments to trigger backend update, even if it's an empty array after filtering out invalid instruments
+        body.instruments = instruments ? instruments.filter((inst) => INSTRUMENTS.includes(inst)) : [];
 
         const resp = await fetch(`${apiURL}/update_affiliation`, {
             method: 'PUT',
@@ -186,10 +185,10 @@ export const ArticleStepperContent = (props: ArticleStepperContentProps) => {
                                                         checked={instruments.includes(instrument)}
                                                         onChange={(e) => {
                                                             if (e.target.checked) {
-                                                                setInstruments([...instruments, instrument]);
+                                                                setInstruments([...instruments, instrument].filter((inst) => INSTRUMENTS.includes(inst)));
                                                             } else {
                                                                 setInstruments(
-                                                                    instruments.filter((inst) => inst !== instrument)
+                                                                    instruments.filter((inst) => inst !== instrument).filter((inst) => INSTRUMENTS.includes(inst))
                                                                 );
                                                             }
                                                         }}

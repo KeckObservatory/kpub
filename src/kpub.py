@@ -810,35 +810,32 @@ def get_word_match_counts_by_query(bibcode, words, ads_api_key):
     return counts
  
 
-def get_word_match_counts_by_pdf(bibcode, words, ads_api_key, blacklist=[]):
-
-    #get pdf file and text
-    outfile = get_pdf_file(bibcode, ads_api_key)
-    #text = get_pdf_text(outfile).lower()
-    text = get_pdf_text(outfile)
-    text = text.replace("\n",' ')
-    text = text.replace("\r",' ')
-    text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\xff]', ' ', text)
-
-    #count up matches
+def get_word_match_counts_from_text(text, words, blacklist=None):
+    blacklist = blacklist or []
     counts = {}
     for word in words:
         counts[word] = {'count': 0, 'snippets': []}
         for ch in (' ', '/', '\(', '-', ':'):
-            #find = f"{ch}{word}".lower()
             find = f"{ch}{word}"
             for match in re.finditer(find, text):
-                #skip if text in blacklist
                 snip = text[match.start()-5:match.end()+5]
                 if any(bl in snip for bl in blacklist):
                     continue
                 snippet = text[match.start()-80:match.end()+80]
                 counts[word]['count'] += 1
                 counts[word]['snippets'].append(snippet)
+    return {key: val for key, val in counts.items() if val['count'] != 0}
 
-    #only return counts > 0
-    counts = {key:val for key, val in counts.items() if val['count'] != 0}
-    return counts
+
+def get_word_match_counts_by_pdf(bibcode, words, ads_api_key, blacklist=[]):
+
+    #get pdf file and text
+    outfile = get_pdf_file(bibcode, ads_api_key)
+    text = get_pdf_text(outfile)
+    text = text.replace("\n",' ')
+    text = text.replace("\r",' ')
+    text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\xff]', ' ', text)
+    return get_word_match_counts_from_text(text, words, blacklist)
   
 
 def get_pdf_file(bibcode, ads_api_key):

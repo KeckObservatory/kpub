@@ -44,7 +44,7 @@ export const adminColumns = [
     { field: 'note', headerName: 'NOTE', width: 150 },
     { field: 'ilabel', headerName: 'ILABEL', width: 150 },
     { field: 'keck_score', headerName: 'KECK_SCORE', width: 100, valueFormatter: (value: number) => value != null ? value.toFixed(3) : '' },
-    { field: 'drp_label', headerName: 'iDRP', width: 100 },
+    { field: 'idrp', headerName: 'iDRP', width: 100 },
     {
         field: 'drp_reason', headerName: 'DRP_REASON', width: 200,
         renderCell: (params: { value: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; }) => (
@@ -57,7 +57,7 @@ export const adminColumns = [
             </Tooltip>
         )
     },
-    { field: 'koa_label', headerName: 'iKOA', width: 100 },
+    { field: 'ikoa', headerName: 'iKOA', width: 100 },
     {
         field: 'koa_reason', headerName: 'KOA_REASON', width: 200,
         renderCell: (params: any) => (

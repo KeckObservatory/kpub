@@ -4,7 +4,7 @@ import { ADS_URL } from './config'
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import { Toolbar } from '@mui/x-data-grid';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type JSXElementConstructor, type ReactElement, type ReactNode, type ReactPortal } from 'react';
 import { BulkAssignerContent } from './bulk_assigner';
 import { ArticleStepperContent } from './article_stepper';
 import { MonthYearPicker } from './monthyear_picker';
@@ -47,7 +47,7 @@ export const adminColumns = [
     { field: 'drp_label', headerName: 'iDRP', width: 100 },
     {
         field: 'drp_reason', headerName: 'DRP_REASON', width: 200,
-        renderCell: (params) => (
+        renderCell: (params: { value: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; }) => (
             <Tooltip
                 title={params.value ?? ''}
                 placement="bottom-start"
@@ -60,7 +60,7 @@ export const adminColumns = [
     { field: 'koa_label', headerName: 'iKOA', width: 100 },
     {
         field: 'koa_reason', headerName: 'KOA_REASON', width: 200,
-        renderCell: (params) => (
+        renderCell: (params: any) => (
             <Tooltip
                 title={params.value ?? ''}
                 placement="bottom-start"
@@ -303,7 +303,7 @@ export const ArticleTable = (props: Props) => {
             checkboxSelection={true}
             disableMultipleRowSelection={false}
             rows={articles ?? []}
-            columns={cols}
+            columns={cols as GridColDef<Article>[]}
         />
     );
 };

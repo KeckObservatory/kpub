@@ -36,6 +36,7 @@ class MongoDBConnector:
         server = self.dbconfig["server"] + ":" + str(self.dbconfig["port"])
         readonlyserver = self.dbconfig.get("readonlyserver", server)
         cmd = ["timeout", "0.5", "ping", "-c", "1", self.dbconfig["server"]]
+        p = None
         try:
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
             p.wait()
@@ -47,7 +48,8 @@ class MongoDBConnector:
             server = readonlyserver
             self.readonly = True
         finally:
-            p.stdout.close()
+            if p and p.stdout:
+                p.stdout.close()
 
         user = self.dbconfig["user"]
         pwd = self.dbconfig["pwd"]

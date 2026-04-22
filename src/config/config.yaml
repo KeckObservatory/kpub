@@ -4,6 +4,7 @@
   "kpub": {
       port: 00000,
       server: "",
+      port: 00000,
       user: "api_user",
       pwd: "",
       database: "kpub",
@@ -58,7 +59,6 @@
     'NIRES',
     'NIRSPEC',
     'OSIRIS',
-    'AO',
     'LGS',
     'NGS',
   ],
@@ -111,7 +111,6 @@
     'OSIRIS': "CYAN",
     'LGS': "CYAN",
     'NGS': "CYAN",
-    'AO': "CYAN",
     'KOA': "YELLOW",
     'Archive': "YELLOW"  
   },

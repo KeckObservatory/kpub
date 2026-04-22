@@ -2,8 +2,6 @@
 Build and maintain a database of publications.
 """
 
-from __future__ import print_function, division, unicode_literals
-
 # Standard library
 import os
 import re
@@ -22,7 +20,14 @@ import logging
 import jinja2
 import pandas as pd
 import pdb
-from .db_mongo_conn import MongoDBConnector 
+
+# Try relative import (when used as installed package or python -m kpub)
+# Fall back to absolute import (when imported directly from source)
+try:
+    from .db_mongo_conn import MongoDBConnector
+except ImportError:
+    from db_mongo_conn import MongoDBConnector
+
 #init logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('KPUB')
@@ -33,7 +38,12 @@ except:
     textract = None
     log.error("Could not import textract!  Will not be able to parse PDF text.")
 
-from . import plot
+# Try relative import (when used as installed package or python -m kpub)
+# Fall back to absolute import (when imported directly from source)
+try:
+    from . import plot
+except ImportError:
+    import plot
 
 
 #misc globals
@@ -124,7 +134,6 @@ class PublicationDB(MongoDBConnector):
             affiliation = 'keck' # pretty sure its keck
         if len(snippits) == 0 and not 'keck' in mission:
             reason = "No instrument names found in snippets."
-            affiliation = 'unrelated' # pretty sure its unrelated
         return affiliation, hasAcknowledgement, reason
 
     def add_article(self, article, statusmsg="", interactive=False):
@@ -138,7 +147,7 @@ class PublicationDB(MongoDBConnector):
         if self.article_exists(article):
             log.info("{} is already in the database "
                      "-- skipping.".format(article['bibcode']))
-            #return 0
+            return 0
 
 
         # Print paper information to stdout
@@ -167,7 +176,7 @@ class PublicationDB(MongoDBConnector):
         if len(snippits) == 0:
             log.info("No snippets found.  Marking as unrelated.")
             mission = 'unrelated'
-        instruments = "|".join([ x for x in snippits.keys() if x not in missions])
+        instruments = "|".join([ x for x in snippits.keys() if x in self.config['instruments']])
 
         # Get archive ack
         archive = self.get_archive_acknowledgement(snippits)
@@ -877,11 +886,14 @@ def update_citations(year):
     pubdb = PublicationDB(config)
     ads_api_key = config.get('ADS_API_KEY')
     articles = pubdb.query(year=year)
-    articles = [article for article in articles if article.get('affiliation') == 'keck']
+    articles = [article for article in articles if article.get('affiliation') == 'keck' or article.get('ilabel') == 'keck']
     log.info(f"Updating citation counts for {len(articles)} articles published in {year}...")
     for article in articles:
         bibcode = article['bibcode']
         citation_fields = get_citation_fields(bibcode, ads_api_key)
+        if not citation_fields:
+            log.warning(f"Could not get citation fields for {bibcode}. Skipping.")
+            continue
         pubdb.update_citation_fields(bibcode, citation_fields)
 
 def get_citation_fields(bibcode, ads_api_key):
@@ -893,7 +905,7 @@ def get_citation_fields(bibcode, ads_api_key):
         return article_fields 
     except (KeyError, IndexError):
         log.warning(f"{bibcode}: no citation_count")
-        return 0
+        return False
 
 
 def get_pdf_text(outfile):
@@ -1077,14 +1089,20 @@ def kpub_set_affiliation(articles,
     return articles
     
 
-def kpub_export(monthyear, begin_year=None, filename=None, affiliation=None, csv=None):
-    """Export the database as JSON format."""
+def kpub_export(monthyear, begin_year=None, filename=None, affiliation=None, csv=None, export_all=False):
+    """Export the database as JSON format (or CSV if specified)."""
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
     db = PublicationDB(config)
-    year, month = monthyear.split('-') if '-' in monthyear else (monthyear, None)
-    year, month = int(year), int(month) if month else None
-    begin_year = int(begin_year) if begin_year else None
-    articles = db.get_articles(begin_year=begin_year, end_year=year, month=month, affiliation=affiliation)
+    
+    if export_all:
+        # Export entire database without filters
+        articles = db.get_articles(affiliation=affiliation)
+    else:
+        year, month = monthyear.split('-') if '-' in monthyear else (monthyear, None)
+        year, month = int(year), int(month) if month else None
+        begin_year = int(begin_year) if begin_year else None
+        articles = db.get_articles(begin_year=begin_year, end_year=year, month=month, affiliation=affiliation)
+    
     if not articles:
         log.info('No rows found.')
         return []
@@ -1201,7 +1219,7 @@ def make_parser():
                         help='Extrapolate the data to the current date.')
 
     citations_parser = subparsers.add_parser('update_citations', help='Update citation fields for publications.')
-    citations_parser.add_argument('year', nargs='?', default=None,
+    citations_parser.add_argument('year', nargs='?', default=None, type=int,
                         help='Year to update citations for. e.g. "2020"')
 
 
@@ -1233,6 +1251,8 @@ def make_parser():
                         help="Filename to export to.")
     export_parser.add_argument('-csv', action='store_true',
                         help="Export as CSV instead of JSON.")
+    export_parser.add_argument('--all', action='store_true',
+                        help="Export all articles in database (ignores monthyear and begin_year filters).")
 
     stats_parser = subparsers.add_parser('stats', help='Get the publication statistics.')
 
@@ -1252,7 +1272,7 @@ if __name__ == "__main__":
     elif cmd == 'plot_data': kpub_plot_data(margs.plotname, margs.instruments, margs.year_begin, margs.extrapolate)
     elif cmd == 'delete':    kpub_delete(margs.bibcode)
     elif cmd == 'import':    kpub_import(margs.jsonfile)
-    elif cmd == 'export':    kpub_export(margs.monthyear, margs.begin_year, margs.filename, margs.affiliation, margs.csv)
+    elif cmd == 'export':    kpub_export(margs.monthyear, margs.begin_year, margs.filename, margs.affiliation, margs.csv, getattr(margs, 'all', False))
     elif cmd == 'stats':     kpub_stats()
     elif cmd == 'update_citations': kpub_update_citations(margs.year)
     elif cmd == 'spreadsheet': kpub_spreadsheet(margs.filename)

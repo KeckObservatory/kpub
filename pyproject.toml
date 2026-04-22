@@ -5,7 +5,7 @@ description = "enables an institution to keep track of it's scientific publicati
 authors = [
     {name = "Tyler Tucker",email = "tylertucker202@gmail.com"}
 ]
-license = {text = "MIT"}
+license = "MIT"
 readme = "README.md"
 requires-python = ">=3.7"
 dependencies = [
@@ -25,6 +25,9 @@ packages = ["kpub"]
 
 [tool.setuptools.package-dir]
 "kpub" = "src"
+
+[tool.setuptools.package-data]
+kpub = ["config/*.yaml", "templates/*.md"]
 
 [build-system]
 requires = ["setuptools>=45", "wheel"]

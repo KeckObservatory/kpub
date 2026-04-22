@@ -11,7 +11,7 @@ It is designed to run at the W. M. Keck Observatory and may no longer function a
 
 This tool is made possible thanks to the efforts of Geert Barentsen who wrote the original version of [kpub](https://github.com/KeplerGO/kpub) for Kepler/K2.  The major changes here are:
 
-- Code is a library installed with `pip install -e .`
+- Code is a library installed with `pip install .`
 - Code is now config-file driven so it can be used by any facility or institution.
 - Added optional tracking of instrument assocations and associated new plots.
 - Added optional tracking of archive references and associated new plots.
@@ -59,11 +59,11 @@ Add `--help` to any command below to get full usage instructions
 * `kpub update` adds new publications by searching ADS (interactive);
 * `kpub add` adds a publication using its ADS bibcode;
 * `kpub delete` deletes a publication using its ADS bibcode;
-* `kpub import` imports bibcodes from a csv file;
-* `kpub export` exports bibcodes to a csv file and saves to data/ dir
-* `kpub plot` creates a visualization of the database and saves to data/plots/ dir here;
-* `kpub plot_data` creates the data needed to generate plots. This is used by the frontend;
-* `kpub stats` creates publications stats in markdown format and saves to data/output dir here;
+* `kpub import` imports publications from a JSON file;
+* `kpub export` exports publications to a JSON file (or CSV with `-csv` flag) and saves to data/ dir
+* `kpub plot` creates a visualization of the database and saves to data/plots/ dir;
+* `kpub plot_data` creates the data needed to generate plots (used by the frontend);
+* `kpub stats` creates publication stats in markdown format and saves to data/output/ dir;
 * `kpub spreadsheet` exports the publications to an Excel spreadsheet
 * `kpub update_citations` for a given year, update the cite_read_boost, citation_count and citation fields
 
@@ -76,22 +76,21 @@ kpub.kpub_update('2025-07')
 ```
 Otherwise you can call the functions from the command line.
 
-Search ADS by pubdate month or year for new articles and add them interactively (and push to repo):
+Search ADS by pubdate month or year for new articles and add them without user input:
 ```
 python -m kpub update 2015-07
-python -m pub update 2015
+python -m kpub update 2015
 ```
 
-Update plots and stats files (and push to repo):
+Update plots and stats files:
 ```
 python -m kpub plot
 python -m kpub stats
-python -m kpub push
 ```
 
 Add a new article to the database interactively using its bibcode:
 ```
-python -m kpub add 2015arXiv150204715F
+python -m kpub add 2015arXiv150204715F -interactive
 ```
 
 Remove an article using its bibcode:

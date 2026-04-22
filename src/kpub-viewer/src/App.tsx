@@ -69,9 +69,9 @@ export interface Article {
   mission?: string
   ilabel?: string
   keck_score?: number
-  drp_label?: string
+  idrp?: string
   drp_reason?: string
-  koa_label?: string
+  ikoa?: string
   koa_reason?: string
 }
 

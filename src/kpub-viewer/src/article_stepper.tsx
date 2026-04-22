@@ -29,7 +29,7 @@ interface ArticleStepperContentProps {
 
 export const ArticleStepperContent = (props: ArticleStepperContentProps) => {
     const { selectedArticles, isKOA, handleClose } = props;
-    const [selectedOption, setSelectedOption] = useState('Keck');
+    const [selectedOption, setSelectedOption] = useState('keck');
     const [note, setNote] = useState('');
     const [instruments, setInstruments] = useState<string[]>([]);
     const [activeStep, setActiveStep] = useState(0);

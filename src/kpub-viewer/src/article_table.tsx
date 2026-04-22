@@ -4,7 +4,7 @@ import { ADS_URL } from './config'
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import { Toolbar } from '@mui/x-data-grid';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type JSXElementConstructor, type ReactElement} from 'react';
 import { BulkAssignerContent } from './bulk_assigner';
 import { ArticleStepperContent } from './article_stepper';
 import { MonthYearPicker } from './monthyear_picker';
@@ -44,10 +44,10 @@ export const adminColumns = [
     { field: 'note', headerName: 'NOTE', width: 150 },
     { field: 'ilabel', headerName: 'ILABEL', width: 150 },
     { field: 'keck_score', headerName: 'KECK_SCORE', width: 100, valueFormatter: (value: number) => value != null ? value.toFixed(3) : '' },
-    { field: 'drp_label', headerName: 'iDRP', width: 100 },
+    { field: 'idrp', headerName: 'iDRP', width: 100 },
     {
         field: 'drp_reason', headerName: 'DRP_REASON', width: 200,
-        renderCell: (params) => (
+        renderCell: (params: { value: ReactElement<unknown, string | JSXElementConstructor<any>>}) => (
             <Tooltip
                 title={params.value ?? ''}
                 placement="bottom-start"
@@ -57,10 +57,10 @@ export const adminColumns = [
             </Tooltip>
         )
     },
-    { field: 'koa_label', headerName: 'iKOA', width: 100 },
+    { field: 'ikoa', headerName: 'iKOA', width: 100 },
     {
         field: 'koa_reason', headerName: 'KOA_REASON', width: 200,
-        renderCell: (params) => (
+        renderCell: (params: { value: ReactElement<unknown, string | JSXElementConstructor<any>>}) => (
             <Tooltip
                 title={params.value ?? ''}
                 placement="bottom-start"
@@ -303,7 +303,7 @@ export const ArticleTable = (props: Props) => {
             checkboxSelection={true}
             disableMultipleRowSelection={false}
             rows={articles ?? []}
-            columns={cols}
+            columns={cols as GridColDef<Article>[]}
         />
     );
 };

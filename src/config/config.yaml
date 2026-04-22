@@ -35,12 +35,8 @@
     },
     {
       'name': "Full text",      
-      "query": '(=full:"keck observatory" OR =full:"keck DEIMOS" OR =full:"keck ESI" 
-                OR =full:"keck HIRES" OR =full:"keck KCWI" OR =full:"keck LRIS" OR =full:"keck MOSFIRE" 
-                OR =full:"keck NIRC2" OR =full:"keck NIRES" OR =full:"keck NIRSPEC" OR =full:"keck OSIRIS" 
-                ) 
-                database:astronomy property:refereed NOT property:nonarticle 
-                NOT =full:"BICEP" NOT =full:"BICEP2" NOT =full:"NUANCE" NOT =full:"keck array"'
+      "query": 'full:"Keck"
+                database:astronomy property:refereed NOT property:nonarticle'
     },
   ],
 

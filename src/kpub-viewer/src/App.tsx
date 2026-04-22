@@ -69,6 +69,10 @@ export interface Article {
   mission?: string
   ilabel?: string
   keck_score?: number
+  drp_label?: string
+  drp_reason?: string
+  koa_label?: string
+  koa_reason?: string
 }
 
 interface State {

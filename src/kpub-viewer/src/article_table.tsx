@@ -44,6 +44,32 @@ export const adminColumns = [
     { field: 'note', headerName: 'NOTE', width: 150 },
     { field: 'ilabel', headerName: 'ILABEL', width: 150 },
     { field: 'keck_score', headerName: 'KECK_SCORE', width: 100, valueFormatter: (value: number) => value != null ? value.toFixed(3) : '' },
+    { field: 'drp_label', headerName: 'iDRP', width: 100 },
+    {
+        field: 'drp_reason', headerName: 'DRP_REASON', width: 200,
+        renderCell: (params) => (
+            <Tooltip
+                title={params.value ?? ''}
+                placement="bottom-start"
+                slotProps={{ tooltip: { sx: { fontSize: '0.95rem' } } }}
+            >
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{params.value}</span>
+            </Tooltip>
+        )
+    },
+    { field: 'koa_label', headerName: 'iKOA', width: 100 },
+    {
+        field: 'koa_reason', headerName: 'KOA_REASON', width: 200,
+        renderCell: (params) => (
+            <Tooltip
+                title={params.value ?? ''}
+                placement="bottom-start"
+                slotProps={{ tooltip: { sx: { fontSize: '0.95rem' } } }}
+            >
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{params.value}</span>
+            </Tooltip>
+        )
+    },
     { field: 'date_modified', headerName: 'DATE_MODIFIED', width: 150 },
     { field: 'last_modifier', headerName: 'LAST_MODIFIER', width: 150 },
     { field: 'has_acknowledgement', headerName: 'Acknowledgement?', width: 70 }

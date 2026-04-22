@@ -47,7 +47,7 @@ export const adminColumns = [
     { field: 'idrp', headerName: 'iDRP', width: 100 },
     {
         field: 'drp_reason', headerName: 'DRP_REASON', width: 200,
-        renderCell: (params: { value: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; }) => (
+        renderCell: (params: { value: ReactElement<unknown, string | JSXElementConstructor<any>>}) => (
             <Tooltip
                 title={params.value ?? ''}
                 placement="bottom-start"
@@ -60,7 +60,7 @@ export const adminColumns = [
     { field: 'ikoa', headerName: 'iKOA', width: 100 },
     {
         field: 'koa_reason', headerName: 'KOA_REASON', width: 200,
-        renderCell: (params: any) => (
+        renderCell: (params: { value: ReactElement<unknown, string | JSXElementConstructor<any>>}) => (
             <Tooltip
                 title={params.value ?? ''}
                 placement="bottom-start"

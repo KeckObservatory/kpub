@@ -27,7 +27,7 @@ interface BulkAssignerContentProps {
 
 export const BulkAssignerContent = (props: BulkAssignerContentProps) => {
     const { selectedArticles, handleClose, isKOA } = props;
-    const [selectedOption, setSelectedOption] = useState('Keck');
+    const [selectedOption, setSelectedOption] = useState('keck');
     const [notes, setNotes] = useState('');
     const context = useStateContext()
 

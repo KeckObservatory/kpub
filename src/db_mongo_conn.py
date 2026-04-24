@@ -5,8 +5,19 @@ from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 import datetime
 import subprocess
+import os
+import yaml
 
 log = logging.getLogger('kpub')
+
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config", "config.live.yaml")
+
+
+def from_config(database="kpub", collection=None, config_path=CONFIG_PATH):
+    """Create a MongoDBConnector using connection details from config.live.yaml."""
+    with open(config_path) as f:
+        config = yaml.load(f, Loader=yaml.FullLoader)
+    return MongoDBConnector(config, database, collection)
 
 
 class MongoDBConnector:
@@ -35,21 +46,16 @@ class MongoDBConnector:
         # get db connect data
         server = self.dbconfig["server"] + ":" + str(self.dbconfig["port"])
         readonlyserver = self.dbconfig.get("readonlyserver", server)
-        cmd = ["timeout", "0.5", "ping", "-c", "1", self.dbconfig["server"]]
-        p = None
+        cmd = ["ping", "-c", "1", "-W", "1", self.dbconfig["server"]]
         try:
-            p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-            p.wait()
-            output = p.stdout.readlines()
-            if len(output) == 0:
+            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            p.wait(timeout=2)
+            if p.returncode != 0:
                 server = readonlyserver
                 self.readonly = True
-        except:
+        except Exception:
             server = readonlyserver
             self.readonly = True
-        finally:
-            if p and p.stdout:
-                p.stdout.close()
 
         user = self.dbconfig["user"]
         pwd = self.dbconfig["pwd"]

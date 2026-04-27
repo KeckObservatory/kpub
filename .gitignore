@@ -8,6 +8,8 @@ node_modules
 /data/output/*
 /data/
 *.txt
+!src/classifier/models/prompts/
+!src/classifier/models/prompts/**/*.txt
 *.png
 *.pdf
 *.md

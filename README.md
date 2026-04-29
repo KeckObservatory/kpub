@@ -50,6 +50,14 @@ Or, create a venv with Python 3.13+ yourself.
 pip install .
 ```
 
+There are additional options you can use to install the machine learning module 'classifier' capabilities by 
+
+```
+pip install .[classifier]
+```
+
+This is separate from the Flask application and should not be installed unless you want to use the transformer classification model when adding papers.
+
 ## Usage
 Add `--help` to any command below to get full usage instructions
 

@@ -5,8 +5,19 @@ from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 import datetime
 import subprocess
+import os
+import yaml
 
 log = logging.getLogger('kpub')
+
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config", "config.live.yaml")
+
+
+def from_config(database="kpub", collection=None, config_path=CONFIG_PATH):
+    """Create a MongoDBConnector using connection details from config.live.yaml."""
+    with open(config_path) as f:
+        config = yaml.load(f, Loader=yaml.FullLoader)
+    return MongoDBConnector(config, database, collection)
 
 
 class MongoDBConnector:
@@ -35,19 +46,16 @@ class MongoDBConnector:
         # get db connect data
         server = self.dbconfig["server"] + ":" + str(self.dbconfig["port"])
         readonlyserver = self.dbconfig.get("readonlyserver", server)
-        cmd = ["timeout", "0.5", "ping", "-c", "1", self.dbconfig["server"]]
+        cmd = ["ping", "-c", "1", "-W", "1", self.dbconfig["server"]]
         try:
-            p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-            p.wait()
-            output = p.stdout.readlines()
-            if len(output) == 0:
+            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            p.wait(timeout=2)
+            if p.returncode != 0:
                 server = readonlyserver
                 self.readonly = True
-        except:
+        except Exception:
             server = readonlyserver
             self.readonly = True
-        finally:
-            p.stdout.close()
 
         user = self.dbconfig["user"]
         pwd = self.dbconfig["pwd"]
@@ -96,15 +104,36 @@ class MongoDBConnector:
             log.info(f"Inserted {article['bibcode']}")
         except pymongo.errors.DuplicateKeyError:
             log.warning(f"{article['bibcode']} was already ingested.")
+    
+    
+    def update_citation_fields(self, bibcode, citation_fields):
+        """Update a document's citation fields in the MongoDB collection."""
+        try:
+            updated_fields = {
+                'last_modifier': 'kpub',
+                'date_modified': datetime.datetime.now(),
+                **citation_fields
+            }
+            self.collection.update_one({'_id': bibcode}, {'$set': updated_fields})
+            log.info(f"Updated citation fields for {bibcode}")
+        except Exception as e:
+            log.error(f"Error updating citation count for {bibcode}: {e}")
 
     def update_row_affiliation(self, article):
-        """Update a document in the MongoDB collection."""
+        """Update a document's affiliation and archive in the MongoDB collection."""
         try:
-            self.collection.update_one({'_id': article['_id']}, {'$set': {
+            updated_fields = {
                 'last_modifier': article['last_modifier'],
                 'date_modified': article['date_modified'],
-                'affiliation': article['affiliation']
-            }})
+                'affiliation': article['affiliation'],
+            }
+            if article.get('archive'):
+                updated_fields['archive'] = article['archive']
+            if article.get('note'):
+                updated_fields['note'] = article['note']
+            if article.get('instruments', None) is not None: # sometimes can be an empty array.
+                updated_fields['instruments'] = article['instruments']
+            self.collection.update_one({'_id': article['_id']}, {'$set': updated_fields})
             log.info(f"Updated {article['bibcode']}")
             return article
         except Exception as e:

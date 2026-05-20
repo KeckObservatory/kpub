@@ -2,8 +2,6 @@
 Build and maintain a database of publications.
 """
 
-from __future__ import print_function, division, unicode_literals
-
 # Standard library
 import os
 import re
@@ -22,7 +20,14 @@ import logging
 import jinja2
 import pandas as pd
 import pdb
-from db_mongo_conn import MongoDBConnector 
+
+# Try relative import (when used as installed package or python -m kpub)
+# Fall back to absolute import (when imported directly from source)
+try:
+    from .db_mongo_conn import MongoDBConnector
+except ImportError:
+    from db_mongo_conn import MongoDBConnector
+
 #init logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('KPUB')
@@ -33,7 +38,12 @@ except:
     textract = None
     log.error("Could not import textract!  Will not be able to parse PDF text.")
 
-import plot
+# Try relative import (when used as installed package or python -m kpub)
+# Fall back to absolute import (when imported directly from source)
+try:
+    from . import plot
+except ImportError:
+    import plot
 
 
 #misc globals
@@ -47,6 +57,7 @@ ADS_API = 'https://api.adsabs.harvard.edu/v1/search/query?'
 
 # Which metadata fields do we want to retrieve from the ADS API?
 # (basically everything apart from 'body' to reduce data volume)
+CITE_FIELDS = ['cite_read_boost', 'citation', 'citation_count']
 FIELDS = ['date', 'pub', 'id', 'volume', 'links_data', 'citation', 'doi',
           'eid', 'keyword_schema', 'citation_count', 'data', 'data_facet',
           'year', 'identifier', 'keyword_norm', 'reference', 'abstract', 'recid',
@@ -123,7 +134,6 @@ class PublicationDB(MongoDBConnector):
             affiliation = 'keck' # pretty sure its keck
         if len(snippits) == 0 and not 'keck' in mission:
             reason = "No instrument names found in snippets."
-            affiliation = 'unrelated' # pretty sure its unrelated
         return affiliation, hasAcknowledgement, reason
 
     def add_article(self, article, statusmsg="", interactive=False):
@@ -232,12 +242,24 @@ class PublicationDB(MongoDBConnector):
         else: 
             return False 
 
-    def set_affiliation(self, articles, affiliation, last_modifier='kpub'):
+    def set_affiliation(self, articles, 
+                        last_modifier='kpub', 
+                        affiliation=None, 
+                        koa_affiliation=None,
+                        instruments=None,
+                        note=None):
         updated_articles = []
         for article in articles:
             # Get the bibcode
             article['date_modified'] = datetime.datetime.now()
-            article['affiliation'] = affiliation
+            if koa_affiliation is not None:
+                article['archive'] = koa_affiliation
+            if affiliation is not None:
+                article['affiliation'] = affiliation
+            if instruments is not None:
+                article['instruments'] = instruments
+            if note is not None:
+                article['note'] = note 
             article['last_modifier'] = last_modifier
             # Save the changes to the database
             updated_article = self.update_row_affiliation(article)
@@ -797,35 +819,32 @@ def get_word_match_counts_by_query(bibcode, words, ads_api_key):
     return counts
  
 
-def get_word_match_counts_by_pdf(bibcode, words, ads_api_key, blacklist=[]):
-
-    #get pdf file and text
-    outfile = get_pdf_file(bibcode, ads_api_key)
-    #text = get_pdf_text(outfile).lower()
-    text = get_pdf_text(outfile)
-    text = text.replace("\n",' ')
-    text = text.replace("\r",' ')
-    text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\xff]', ' ', text)
-
-    #count up matches
+def get_word_match_counts_from_text(text, words, blacklist=None):
+    blacklist = blacklist or []
     counts = {}
     for word in words:
         counts[word] = {'count': 0, 'snippets': []}
         for ch in (' ', '/', '\(', '-', ':'):
-            #find = f"{ch}{word}".lower()
             find = f"{ch}{word}"
             for match in re.finditer(find, text):
-                #skip if text in blacklist
                 snip = text[match.start()-5:match.end()+5]
                 if any(bl in snip for bl in blacklist):
                     continue
                 snippet = text[match.start()-80:match.end()+80]
                 counts[word]['count'] += 1
                 counts[word]['snippets'].append(snippet)
+    return {key: val for key, val in counts.items() if val['count'] != 0}
 
-    #only return counts > 0
-    counts = {key:val for key, val in counts.items() if val['count'] != 0}
-    return counts
+
+def get_word_match_counts_by_pdf(bibcode, words, ads_api_key, blacklist=[]):
+
+    #get pdf file and text
+    outfile = get_pdf_file(bibcode, ads_api_key)
+    text = get_pdf_text(outfile)
+    text = text.replace("\n",' ')
+    text = text.replace("\r",' ')
+    text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\xff]', ' ', text)
+    return get_word_match_counts_from_text(text, words, blacklist)
   
 
 def get_pdf_file(bibcode, ads_api_key):
@@ -843,6 +862,50 @@ def get_pdf_file(bibcode, ads_api_key):
     with open(outfile, 'wb') as f:
          f.write(resp.content)
     return outfile
+
+def kpub_update_citations(year):
+    """Updates the citation counts for all articles in the database for a given year.
+
+    Parameters
+    ----------
+    year : str
+        Year to update in format "YYYY". Ex: "2019"
+    """
+    log.info(f"Updating citation counts for articles published in {year}...")
+    update_citations(year)
+
+def update_citations(year):
+    """Updates the citation counts for all articles in the database.
+
+    Parameters
+    ----------
+    yearmonth : str
+        Year and month to update in format "YYYY-MM". Ex: "2019-03"
+    """
+    config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
+    pubdb = PublicationDB(config)
+    ads_api_key = config.get('ADS_API_KEY')
+    articles = pubdb.query(year=year)
+    articles = [article for article in articles if article.get('affiliation') == 'keck' or article.get('ilabel') == 'keck']
+    log.info(f"Updating citation counts for {len(articles)} articles published in {year}...")
+    for article in articles:
+        bibcode = article['bibcode']
+        citation_fields = get_citation_fields(bibcode, ads_api_key)
+        if not citation_fields:
+            log.warning(f"Could not get citation fields for {bibcode}. Skipping.")
+            continue
+        pubdb.update_citation_fields(bibcode, citation_fields)
+
+def get_citation_fields(bibcode, ads_api_key):
+
+    url = f'{ADS_API}q=bibcode:{bibcode}&fl={",".join(CITE_FIELDS)}'
+    data = request_ads_api(url, ads_api_key)
+    try:
+        article_fields = data['response']['docs'][0]
+        return article_fields 
+    except (KeyError, IndexError):
+        log.warning(f"{bibcode}: no citation_count")
+        return False
 
 
 def get_pdf_text(outfile):
@@ -1007,23 +1070,39 @@ def kpub_import(jsonfile):
           "\nREMINDER: Do a `kpub push` to update the data files in github!" +
           HIGHLIGHTS['END'])
 
-def kpub_set_affiliation(articles, affiliation, last_modifier):
+def kpub_set_affiliation(articles, 
+                         last_modifier, 
+                         affiliation=None, 
+                         koa_affiliation=None,
+                         instruments=None,
+                         note=None):
 
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
     db = PublicationDB(config)
-    articles = db.set_affiliation(articles, affiliation, last_modifier)
+    articles = db.set_affiliation(articles, 
+                                  last_modifier, 
+                                  affiliation=affiliation, 
+                                  koa_affiliation=koa_affiliation,
+                                  instruments=instruments,
+                                  note=note)
     log.info('Set affiliation for {} articles to {}'.format(len(articles), affiliation))
     return articles
     
 
-def kpub_export(monthyear, begin_year=None, filename=None, affiliation=None, csv=None):
-    """Export the database as JSON format."""
+def kpub_export(monthyear, begin_year=None, filename=None, affiliation=None, csv=None, export_all=False):
+    """Export the database as JSON format (or CSV if specified)."""
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
     db = PublicationDB(config)
-    year, month = monthyear.split('-') if '-' in monthyear else (monthyear, None)
-    year, month = int(year), int(month) if month else None
-    begin_year = int(begin_year) if begin_year else None
-    articles = db.get_articles(begin_year=begin_year, end_year=year, month=month, affiliation=affiliation)
+    
+    if export_all:
+        # Export entire database without filters
+        articles = db.get_articles(affiliation=affiliation)
+    else:
+        year, month = monthyear.split('-') if '-' in monthyear else (monthyear, None)
+        year, month = int(year), int(month) if month else None
+        begin_year = int(begin_year) if begin_year else None
+        articles = db.get_articles(begin_year=begin_year, end_year=year, month=month, affiliation=affiliation)
+    
     if not articles:
         log.info('No rows found.')
         return []
@@ -1139,6 +1218,11 @@ def make_parser():
     plot_data_parser.add_argument('extrapolate', nargs='?', default=False,
                         help='Extrapolate the data to the current date.')
 
+    citations_parser = subparsers.add_parser('update_citations', help='Update citation fields for publications.')
+    citations_parser.add_argument('year', nargs='?', default=None, type=int,
+                        help='Year to update citations for. e.g. "2020"')
+
+
     add_parser = subparsers.add_parser('add', help='Add a publication to the database.')
     add_parser.add_argument('bibcode', nargs='+',
                         help='ADS bibcode that identifies the publication.')
@@ -1167,6 +1251,8 @@ def make_parser():
                         help="Filename to export to.")
     export_parser.add_argument('-csv', action='store_true',
                         help="Export as CSV instead of JSON.")
+    export_parser.add_argument('--all', action='store_true',
+                        help="Export all articles in database (ignores monthyear and begin_year filters).")
 
     stats_parser = subparsers.add_parser('stats', help='Get the publication statistics.')
 
@@ -1186,7 +1272,8 @@ if __name__ == "__main__":
     elif cmd == 'plot_data': kpub_plot_data(margs.plotname, margs.instruments, margs.year_begin, margs.extrapolate)
     elif cmd == 'delete':    kpub_delete(margs.bibcode)
     elif cmd == 'import':    kpub_import(margs.jsonfile)
-    elif cmd == 'export':    kpub_export(margs.monthyear, margs.begin_year, margs.filename, margs.affiliation, margs.csv)
+    elif cmd == 'export':    kpub_export(margs.monthyear, margs.begin_year, margs.filename, margs.affiliation, margs.csv, getattr(margs, 'all', False))
     elif cmd == 'stats':     kpub_stats()
+    elif cmd == 'update_citations': kpub_update_citations(margs.year)
     elif cmd == 'spreadsheet': kpub_spreadsheet(margs.filename)
-    else: log.error("Unknown kpub command")
+    else: log.error(f"Unknown kpub command: {cmd}")

@@ -5,21 +5,44 @@ description = "enables an institution to keep track of it's scientific publicati
 authors = [
     {name = "Tyler Tucker",email = "tylertucker202@gmail.com"}
 ]
-license = {text = "MIT"}
+license = "MIT"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.13"
 dependencies = [
-  "pyyaml",
-  "requests",
-  "jinja2",
-  "textract-py3",
-  "matplotlib",
-  "pymongo",
-  "bokeh",
-  "openpyxl"
+    "pyyaml>=6.0",
+    "requests>=2.32.5",
+    "jinja2",
+    "textract-py3",
+    "matplotlib",
+    "pymongo>=4.16.0",
+    "bokeh",
+    "openpyxl",
+    "pandas>=3.0.1",
 ]
 
+[project.optional-dependencies]
+classifier = [
+"PyMuPDF>=1.25.0",
+"rank-bm25>=0.2.2",
+"sentence-transformers>=5.2.3",
+"ollama>=0.5.0"
+]
+
+[tool.setuptools]
+packages = [
+    "kpub",
+    "kpub.classifier",
+    "kpub.classifier.data",
+    "kpub.classifier.models",
+    "kpub.classifier.scripts",
+]
+
+[tool.setuptools.package-dir]
+"kpub" = "src"
+
+[tool.setuptools.package-data]
+kpub = ["config/*.yaml", "templates/*.md", "classifier/config/*.yaml", "classifier/models/prompts/*"]
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"

@@ -1,20 +1,23 @@
-import { DataGrid, ToolbarButton, type GridColDef, type GridRowSelectionModel, type GridToolbarProps, type ToolbarPropsOverrides } from '@mui/x-data-grid';
+import { DataGrid, type GridColDef, type GridRowSelectionModel, type GridToolbarProps, type ToolbarPropsOverrides } from '@mui/x-data-grid';
 import { type Article } from './App';
 import { ADS_URL } from './config'
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import { Toolbar } from '@mui/x-data-grid';
-import { useEffect, useMemo, useState } from 'react';
-import { ArticleStepper } from './article_stepper';
-import { BulkAssigner } from './bulk_assigner';
+import { useEffect, useMemo, useState, type JSXElementConstructor, type ReactElement} from 'react';
+import { BulkAssignerContent } from './bulk_assigner';
+import { ArticleStepperContent } from './article_stepper';
 import { MonthYearPicker } from './monthyear_picker';
-import { ExportCsv } from '@mui/x-data-grid';
 import Tooltip from '@mui/material/Tooltip';
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
-
+import DownloadIcon from '@mui/icons-material/Download';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
 interface EditToolbarProps extends GridToolbarProps, ToolbarPropsOverrides {
     selectedArticles: Article[];
     isAdmin: boolean | null;
+    allArticles: Article[];
 }
 
 export const ads_link = (x: string) => `${ADS_URL}/abs/${x}/abstract`
@@ -38,56 +41,138 @@ export const adminColumns = [
     { field: 'archive', headerName: 'KOA?', width: 70 },
     { field: 'affiliation', headerName: 'AFFILIATION', width: 150 },
     { field: 'reason', headerName: 'REASON', width: 150 },
+    { field: 'note', headerName: 'NOTE', width: 150 },
     { field: 'ilabel', headerName: 'ILABEL', width: 150 },
     { field: 'keck_score', headerName: 'KECK_SCORE', width: 100, valueFormatter: (value: number) => value != null ? value.toFixed(3) : '' },
+    { field: 'idrp', headerName: 'iDRP', width: 100 },
+    {
+        field: 'drp_reason', headerName: 'DRP_REASON', width: 200,
+        renderCell: (params: { value: ReactElement<unknown, string | JSXElementConstructor<any>>}) => (
+            <Tooltip
+                title={params.value ?? ''}
+                placement="bottom-start"
+                slotProps={{ tooltip: { sx: { fontSize: '0.95rem' } } }}
+            >
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{params.value}</span>
+            </Tooltip>
+        )
+    },
+    { field: 'ikoa', headerName: 'iKOA', width: 100 },
+    {
+        field: 'koa_reason', headerName: 'KOA_REASON', width: 200,
+        renderCell: (params: { value: ReactElement<unknown, string | JSXElementConstructor<any>>}) => (
+            <Tooltip
+                title={params.value ?? ''}
+                placement="bottom-start"
+                slotProps={{ tooltip: { sx: { fontSize: '0.95rem' } } }}
+            >
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{params.value}</span>
+            </Tooltip>
+        )
+    },
     { field: 'date_modified', headerName: 'DATE_MODIFIED', width: 150 },
     { field: 'last_modifier', headerName: 'LAST_MODIFIER', width: 150 },
     { field: 'has_acknowledgement', headerName: 'Acknowledgement?', width: 70 }
 ]
 
+const exportArticlesToCsv = (articles: Article[], columnFields: string[], filename: string = 'articles.csv') => {
+    if (articles.length === 0) return;
+
+    // Create CSV header
+    const headers = columnFields.join(',');
+
+    // Create CSV rows
+    const rows = articles.map(article => {
+        return columnFields.map(field => {
+            const value = (article as any)[field];
+            // Handle null/undefined
+            if (value === null || value === undefined) return '';
+            // Quote fields that contain commas or quotes
+            const strValue = String(value);
+            if (strValue.includes(',') || strValue.includes('"') || strValue.includes('\n')) {
+                return `"${strValue.replace(/"/g, '""')}"`;
+            }
+            return strValue;
+        }).join(',');
+    });
+
+    // Combine header and rows
+    const csv = [headers, ...rows].join('\n');
+
+    // Create Blob and download
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+};
+
+interface AffiliationDialogProps {
+    type: 'keckbulk' | 'keckstepper' | 'koabulk' | 'koastepper' | null;
+    selectedArticles: Article[];
+    isOpen: boolean;
+    handleClose: () => void;
+}
+
+const AffiliationDialog = ({ type, selectedArticles, isOpen, handleClose }: AffiliationDialogProps) => {
+    const isKOA = type?.startsWith('koa') ?? false;
+    const isStepper = type?.endsWith('stepper') ?? false;
+
+    const getTitle = () => {
+        if (isStepper) {
+            return `Stepper for verifying ${isKOA ? 'KOA' : 'Keck'} article affiliation`;
+        }
+        return 'Bulk Edit Selected Articles';
+    };
+
+    const maxWidth = isStepper ? 'xl' : 'sm';
+
+    return (
+        <Dialog maxWidth={maxWidth} fullWidth open={isOpen} onClose={handleClose}>
+            <DialogTitle>{getTitle()}</DialogTitle>
+            {isStepper ? (
+                <ArticleStepperContent
+                    selectedArticles={selectedArticles}
+                    isKOA={isKOA}
+                    handleClose={handleClose}
+                />
+            ) : (
+                <BulkAssignerContent
+                    selectedArticles={selectedArticles}
+                    isKOA={isKOA}
+                    handleClose={handleClose}
+                />
+            )}
+        </Dialog>
+    );
+};
+
 
 
 export function EditToolbar(props: EditToolbarProps) {
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [isStepperOpen, setIsStepperOpen] = useState(false);
-    const [_, setIsPlotOpen] = useState(false);
+    const [menuOpen, setMenuOpen] = useState<null | HTMLElement>(null);
+    const [activeDialog, setActiveDialog] = useState<'keckbulk' | 'keckstepper' | 'koabulk' | 'koastepper' | null>(null);
 
-    const openDialog = (type: string) => {
-        if (type === 'bulk') {
-            handleOpenDialog()
-        } else if (type === 'stepper') {
-            handleOpenStepper()
-        }
-        else if (type === 'plot') {
-            handleOpenPlot()
-        }
+    const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+        setMenuOpen(event.currentTarget);
     }
 
+    const handleMenuClose = () => {
+        setMenuOpen(null);
+    }
 
-    const handleOpenPlot = () => {
-        setIsDialogOpen(false);
-        setIsStepperOpen(false);
-        setIsPlotOpen(true);
-    };
-
-    const handleOpenDialog = () => {
-        setIsDialogOpen(true);
-        setIsStepperOpen(false);
-        setIsPlotOpen(false);
+    const handleOpenDialog = (dialogType: 'keckbulk' | 'keckstepper' | 'koabulk' | 'koastepper') => {
+        setActiveDialog(dialogType);
+        handleMenuClose();
     };
 
     const handleCloseDialog = () => {
-        setIsDialogOpen(false);
-    };
-
-    const handleOpenStepper = () => {
-        setIsStepperOpen(true);
-        setIsDialogOpen(false);
-        setIsPlotOpen(false);
-    };
-
-    const handleCloseStepper = () => {
-        setIsStepperOpen(false);
+        setActiveDialog(null);
     };
 
 
@@ -97,28 +182,52 @@ export function EditToolbar(props: EditToolbarProps) {
                 <MonthYearPicker />
                 {props.isAdmin && (
                     <>
-                        <Button color="primary" onClick={() => openDialog('bulk')} variant="contained">
-                            Change Affiliation of Selected Articles
-                        </Button>
-                        <Button color="primary" onClick={() => openDialog('stepper')} variant="contained">
-                            Bulk Change Affiliation of Selected Articles
-                        </Button>
-                        <ArticleStepper
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <Button color="primary" onClick={handleMenuClick} variant="contained">
+                                Admin Actions
+                            </Button>
+                            <Menu
+                                anchorEl={menuOpen}
+                                open={Boolean(menuOpen)}
+                                onClose={handleMenuClose}
+                            >
+                                <MenuItem onClick={() => handleOpenDialog('keckstepper')}>
+                                    Change Keck Affiliation of Selected Articles
+                                </MenuItem>
+                                <MenuItem onClick={() => handleOpenDialog('keckbulk')}>
+                                    Bulk Change Keck Affiliation of Selected Articles
+                                </MenuItem>
+                                <MenuItem onClick={() => handleOpenDialog('koastepper')}>
+                                    Change KOA Affiliation of Selected Articles
+                                </MenuItem>
+                                <MenuItem onClick={() => handleOpenDialog('koabulk')}>
+                                    Bulk Change KOA Affiliation of Selected Articles
+                                </MenuItem>
+                            </Menu>
+                        </div>
+
+                        <AffiliationDialog
+                            type={activeDialog}
                             selectedArticles={props.selectedArticles}
-                            isOpen={isDialogOpen}
+                            isOpen={activeDialog !== null}
                             handleClose={handleCloseDialog}
-                        />
-                        <BulkAssigner
-                            selectedArticles={props.selectedArticles}
-                            isOpen={isStepperOpen}
-                            handleClose={handleCloseStepper}
                         />
                     </>
                 )}
-                <Tooltip title="Download as CSV">
-                    <ExportCsv render={<ToolbarButton />}>
-                        <FileDownloadIcon fontSize="small" />
-                    </ExportCsv>
+                <Tooltip title={props.selectedArticles.length > 0 ? "Download selected articles as CSV" : "Download all articles as CSV"}>
+                    <Button
+                        size="small"
+                        startIcon={<DownloadIcon />}
+                        onClick={() => {
+                            const articlesToExport = props.selectedArticles.length > 0 ? props.selectedArticles : props.allArticles;
+                            const columnFields = props.isAdmin
+                                ? (articlesToExport.length > 0 ? Object.keys(articlesToExport[0]) : [])
+                                : columns.map(col => col.field);
+                            exportArticlesToCsv(articlesToExport, columnFields, 'keck-articles.csv');
+                        }}
+                    >
+                        Export {props.selectedArticles.length > 0 ? 'Selected' : 'All'}
+                    </Button>
                 </Tooltip>
             </Stack>
         </Toolbar>
@@ -181,7 +290,8 @@ export const ArticleTable = (props: Props) => {
             slotProps={{
                 toolbar: {
                     selectedArticles: selectedArticles,
-                    isAdmin: isAdmin
+                    isAdmin: isAdmin,
+                    allArticles: articles ?? []
                 } as EditToolbarProps,
             }}
             showToolbar
@@ -193,7 +303,7 @@ export const ArticleTable = (props: Props) => {
             checkboxSelection={true}
             disableMultipleRowSelection={false}
             rows={articles ?? []}
-            columns={cols}
+            columns={cols as GridColDef<Article>[]}
         />
     );
 };

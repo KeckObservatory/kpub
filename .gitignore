@@ -2,12 +2,14 @@
 .DS_Store
 .env
 dev_server.py
-data/plots/*
+/data/plots/*
 package-lock.json
 node_modules
-data/output/*
-data/
+/data/output/*
+/data/
 *.txt
+!src/classifier/models/prompts/
+!src/classifier/models/prompts/**/*.txt
 *.png
 *.pdf
 *.md
@@ -144,3 +146,15 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Classifier
+src/classifier/config/article_subset.yaml
+src/classifier/config/models.yaml
+src/classifier/config/queue/**
+classifier_runtime/
+.archive/
+scratch/
+
+# uv (not used here, but in case it gets invoked by accident)
+uv.lock
+.venv/

@@ -14,7 +14,7 @@ dependencies = [
     "jinja2",
     "textract-py3",
     "matplotlib",
-    "pymongo>=4.16.0",
+    "pymongo==3.12.3",
     "bokeh",
     "openpyxl",
     "pandas>=3.0.1",

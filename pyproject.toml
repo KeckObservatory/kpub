@@ -14,9 +14,13 @@ dependencies = [
     "jinja2",
     "textract-py3",
     "matplotlib",
-    "pymongo>=4.16.0",
+    "pymongo==3.12.3",
     "bokeh",
     "openpyxl",
+]
+
+[project.optional-dependencies]
+classifier = [
     "pandas>=3.0.1",
     "PyMuPDF>=1.25.0",
     "rank-bm25>=0.2.2",

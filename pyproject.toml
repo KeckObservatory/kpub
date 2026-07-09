@@ -1,6 +1,6 @@
 [project]
 name = "kpub"
-version = "0.1.0"
+version = "0.2.0"
 description = "enables an institution to keep track of it's scientific publications in an easy way."
 authors = [
     {name = "Tyler Tucker",email = "tylertucker202@gmail.com"}

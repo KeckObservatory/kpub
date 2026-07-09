@@ -260,3 +260,9 @@ class MongoDBConnector:
         }
         count = self.collection.count_documents(query)
         return count
+
+    def get_fulltext(self, bibcodes):
+        """Get full text documents for the given bibcodes."""
+        query = {'bibcode': {'$in': bibcodes}}
+        rows = list(self.collection.find(query))
+        return rows

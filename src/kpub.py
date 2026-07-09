@@ -1087,7 +1087,13 @@ def kpub_set_affiliation(articles,
                                   note=note)
     log.info('Set affiliation for {} articles to {}'.format(len(articles), affiliation))
     return articles
-    
+
+def kpub_get_fulltext(bibcodes):
+    """Download the full text of publications using their ADS bibcodes."""
+    config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
+    db = PublicationDB(config, collection='fulltext')
+    fulltext_documents = db.get_fulltext(bibcodes)
+    return fulltext_documents
 
 def kpub_export(monthyear, begin_year=None, filename=None, affiliation=None, csv=None, export_all=False):
     """Export the database as JSON format (or CSV if specified)."""

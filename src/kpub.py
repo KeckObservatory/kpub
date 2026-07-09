@@ -1088,8 +1088,9 @@ def kpub_set_affiliation(articles,
     log.info('Set affiliation for {} articles to {}'.format(len(articles), affiliation))
     return articles
 
-def kpub_get_fulltext(bibcodes):
-    """Download the full text of publications using their ADS bibcodes."""
+def kpub_export_fulltext(bibcodes):
+    """Download the full text of publications using their ADS bibcodes. Output
+    comes out as JSON"""
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
     db = PublicationDB(config, collection='fulltext')
     fulltext_documents = db.get_fulltext(bibcodes)

@@ -89,10 +89,11 @@ class PublicationDB(MongoDBConnector):
     filename : str
         Path to the SQLite database file.
     """
-    def __init__(self, config=None):
+    def __init__(self, config=None, collection=None):
         self.config = config
+        self.collection = collection if collection else None 
         #super().__init__(filename)
-        super().__init__(self.config, 'kpub')
+        super().__init__(self.config, 'kpub', collection=self.collection)
 
     def add(self, article, mission, snippits, instruments, archive, affiliation, reason, hasAcknowledgement):
         """Adds a single article object to the database.

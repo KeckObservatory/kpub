@@ -214,10 +214,13 @@ class PublicationDB(MongoDBConnector):
         #try two methods for finding matches
 
         try:
-            counts = get_word_match_counts_by_pdf(bibcode, words, ads_api_key, blacklist)
+            counts, fulltext = get_word_match_counts_by_pdf(bibcode, words, ads_api_key, blacklist)
         except Exception as err:
             log.warning(f"Could not parse PDF file. {err} Using alternate ADS query method...")
-            counts = get_word_match_counts_by_query(bibcode, words, ads_api_key)
+            counts, fulltext = get_word_match_counts_by_query(bibcode, words, ads_api_key, blacklist)
+
+        if fulltext:
+            self.save_fulltext(bibcode, fulltext)
 
         #log.info snippets
         log.info("\nSNIPPETS FOUND:")
@@ -227,6 +230,10 @@ class PublicationDB(MongoDBConnector):
                 log.info(f'"... {snippet}"')
 
         return counts
+
+    def save_fulltext(self, bibcode, fulltext):
+        """Store the extracted plaintext of an article in the 'fulltext' collection."""
+        self.upsert_fulltext(bibcode, fulltext)
 
 
     def get_archive_acknowledgement(self, snippits):
@@ -724,7 +731,13 @@ def request_ads_api(url, ads_api_key, returnResp=False):
     dict
         The JSON response from the ADS API.
     """
-    headers = {'Authorization': f'Bearer {ads_api_key}'}
+    # Some publisher sites reached via ADS's link_gateway (e.g. PUB_HTML/PUB_PDF)
+    # block the default python-requests User-Agent as a bot, even for fully
+    # open-access articles, so pretend to be a browser.
+    headers = {
+        'Authorization': f'Bearer {ads_api_key}',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+    }
     resp = requests.get(url, headers=headers)
     rateLimitRem = resp.headers.get('X-RateLimit-Remaining', 100)
     if int(rateLimitRem) < 10:
@@ -789,35 +802,36 @@ def display_abstract(article_dict, colors, highlights=None):
     log.info('')
 
 
-def get_word_match_counts_by_query(bibcode, words, ads_api_key):
+def get_word_match_counts_by_query(bibcode, words, ads_api_key, blacklist=None):
+    '''Fetch title/abstract/ack/body text directly from the ADS API (as opposed to
+    parsing a downloaded PDF) and compute word match counts/snippets from it.'''
 
     bibcode = bibcode.replace('&', '%26')
 
-    counts = {}
-    for word in words:
-        word = word.replace(' ', '+')
-        url = (f'{ADS_API}' 
-            f'q=bibcode:%22{bibcode}%22+full:%22{word}%22'
-            "&fl=id,bibcode"
-            "&sort=date+asc"
-            "&hl=true"
-            "&hl.fl=ack,body,title,abstract"
-            "&hl.snippets=4"
-            "&hl.fragsize=100"
-            "&hl.maxAnalyzedChars=500000"
-        )
-        data = request_ads_api(url, ads_api_key)
-        counts[word] = {'count': 0, 'snippets': []}
-        for doc in data.get('response', {}).get('docs',[]):
-            id = doc['id']
-            highlights = data['highlighting'][id]
-            for _, snippets in highlights.items():
-                counts[word]['count'] += len(snippets)
-                counts[word]['snippets'] = snippets
+    url = (f'{ADS_API}'
+        f'q=bibcode:%22{bibcode}%22'
+        "&fl=id,bibcode,title,abstract,ack,body"
+        "&sort=date+asc"
+    )
+    data = request_ads_api(url, ads_api_key)
+    docs = data.get('response', {}).get('docs', [])
+    if not docs:
+        return {}, ''
 
-    #only return counts > 0
-    counts = {key:val for key, val in counts.items() if val['count'] != 0}
-    return counts
+    doc = docs[0]
+    fulltext_parts = []
+    for field in ('title', 'abstract', 'ack', 'body'):
+        value = doc.get(field)
+        if not value:
+            continue
+        if isinstance(value, list):
+            fulltext_parts.extend(str(v) for v in value)
+        else:
+            fulltext_parts.append(str(value))
+    fulltext = "\n".join(fulltext_parts)
+
+    counts = get_word_match_counts_from_text(fulltext, words, blacklist)
+    return counts, fulltext
  
 
 def get_word_match_counts_from_text(text, words, blacklist=None):
@@ -841,28 +855,59 @@ def get_word_match_counts_by_pdf(bibcode, words, ads_api_key, blacklist=[]):
 
     #get pdf file and text
     outfile = get_pdf_file(bibcode, ads_api_key)
+    if not outfile:
+        raise Exception(f"Could not download fulltext for {bibcode}")
     text = get_pdf_text(outfile)
     text = text.replace("\n",' ')
     text = text.replace("\r",' ')
     text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\xff]', ' ', text)
-    return get_word_match_counts_from_text(text, words, blacklist)
+    counts = get_word_match_counts_from_text(text, words, blacklist)
+    return counts, text
   
 
-def get_pdf_file(bibcode, ads_api_key):
+# ADS link_gateway esources to try for fulltext, in order of preference.
+# EPRINT_* points to the arXiv copy; PUB_* points to the publisher's copy
+# (needed for e.g. open-access journal articles that have no arXiv preprint).
+FULLTEXT_ESOURCES = ['EPRINT_PDF', 'PUB_PDF', 'EPRINT_HTML', 'PUB_HTML']
 
-    outfile = f'/tmp/{bibcode}.pdf'
-    if os.path.isfile(outfile):
+def get_pdf_file(bibcode, ads_api_key):
+    '''Download the fulltext of an article, trying each esource in
+    FULLTEXT_ESOURCES until one succeeds. Returns the path to the downloaded
+    file (.pdf or .html depending on the esource used), or False if none worked.'''
+
+    for esource in FULLTEXT_ESOURCES:
+        ext = 'pdf' if 'PDF' in esource else 'html'
+        outfile = f'/tmp/{bibcode}.{ext}'
+        if os.path.isfile(outfile):
+            return outfile
+
+        log.info(f'\nRetrieving fulltext via {esource} (May take up to a minute)...')
+        url = f'https://ui.adsabs.harvard.edu/link_gateway/{bibcode}/{esource}'
+        try:
+            resp = request_ads_api(url, ads_api_key, returnResp=True)
+        except Exception as err:
+            log.info(f"{esource} gateway failed for {bibcode}: {err}")
+            continue
+        if resp.status_code != 200 or len(resp.content) < 1000:
+            continue
+
+        # Publisher gateways sometimes 200 with a paywall/verification page
+        # instead of the real file, so check the returned type matches what
+        # this esource is supposed to be before trusting it.
+        content_type = resp.headers.get('Content-Type', '').lower()
+        if ext == 'pdf' and 'pdf' not in content_type:
+            log.info(f"{esource} for {bibcode} returned Content-Type '{content_type}', not a PDF. Skipping.")
+            continue
+        if ext == 'html' and 'html' not in content_type:
+            log.info(f"{esource} for {bibcode} returned Content-Type '{content_type}', not HTML. Skipping.")
+            continue
+
+        with open(outfile, 'wb') as f:
+             f.write(resp.content)
         return outfile
 
-    log.info('\nRetrieving PDF (May take up to a minute)...')
-    url = f'https://ui.adsabs.harvard.edu/link_gateway/{bibcode}/EPRINT_PDF'
-    resp = request_ads_api(url, ads_api_key, returnResp=True)
-    if resp.status_code != 200 or len(resp.content) < 1000:
-        print("Could not download PDF file.")
-        return False
-    with open(outfile, 'wb') as f:
-         f.write(resp.content)
-    return outfile
+    log.warning(f"Could not download fulltext for {bibcode} via any esource.")
+    return False
 
 def kpub_update_citations(year):
     """Updates the citation counts for all articles in the database for a given year.
@@ -910,7 +955,13 @@ def get_citation_fields(bibcode, ads_api_key):
 
 
 def get_pdf_text(outfile):
+    '''Extract plaintext from a downloaded fulltext file (.pdf or .html).'''
     assert textract, "No textract module found."
+
+    if outfile.endswith('.html'):
+        text = textract.process(outfile)
+        return text.decode("utf-8")
+
     methods = ['pdftotext', 'pdfminer']
     text = ''
     for method in methods:

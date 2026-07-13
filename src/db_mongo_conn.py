@@ -266,3 +266,17 @@ class MongoDBConnector:
         query = {'bibcode': {'$in': bibcodes}}
         rows = list(self.collection.find(query))
         return rows
+
+    def upsert_fulltext(self, bibcode, fulltext):
+        """Insert or update the extracted plaintext for a publication in the 'fulltext' collection."""
+        fulltext_collection = self.client['kpub']['fulltext']
+        fulltext_collection.update_one(
+            {'_id': bibcode},
+            {'$set': {
+                'bibcode': bibcode,
+                'fulltext': fulltext,
+                'last_updated': datetime.datetime.now(),
+            }},
+            upsert=True
+        )
+        log.info(f"Saved fulltext for {bibcode}")

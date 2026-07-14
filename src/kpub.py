@@ -233,6 +233,9 @@ class PublicationDB(MongoDBConnector):
 
     def save_fulltext(self, bibcode, fulltext):
         """Store the extracted plaintext of an article in the 'fulltext' collection."""
+        if not fulltext or not fulltext.strip():
+            log.warning(f"Not saving fulltext for {bibcode}: extracted text is empty/blank.")
+            return
         self.upsert_fulltext(bibcode, fulltext)
 
 
@@ -970,10 +973,10 @@ def get_pdf_text(outfile):
         try:
             text = textract.process(outfile, method=method)
             text = text.decode("utf-8")
-            if text: return text
+            if text.strip(): return text
         except Exception as e:
             log.info(f"textract: {method} method failed.  Trying another method...")
-    if not text:
+    if not text.strip():
         raise Exception("Could not extract PDF text")
 
 

@@ -70,7 +70,14 @@ export const adminColumns = [
             </Tooltip>
         )
     },
-    { field: 'date_modified', headerName: 'DATE_MODIFIED', width: 150 },
+    {
+        field: 'date_created', headerName: 'DATE_CREATED', width: 150,
+        sortComparator: (v1: string, v2: string) => new Date(v1).getTime() - new Date(v2).getTime(),
+    },
+    {
+        field: 'date_modified', headerName: 'DATE_MODIFIED', width: 150,
+        sortComparator: (v1: string, v2: string) => new Date(v1).getTime() - new Date(v2).getTime(),
+    },
     { field: 'last_modifier', headerName: 'LAST_MODIFIER', width: 150 },
     { field: 'has_acknowledgement', headerName: 'Acknowledgement?', width: 70 }
 ]

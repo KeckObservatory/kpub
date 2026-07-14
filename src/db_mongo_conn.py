@@ -90,6 +90,7 @@ class MongoDBConnector:
 
             article['last_modifier'] = 'kpub'
             article['date_modified'] = datetime.datetime.now()
+            article['date_created'] = article['date_modified']
             article['month'] = int(month)
             article['year'] = int(year)
             article['mission'] = mission

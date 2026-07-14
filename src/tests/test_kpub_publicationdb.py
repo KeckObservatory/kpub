@@ -115,6 +115,7 @@ def test_add_inserts_row_with_expected_fields(db):
     assert inserted['affiliation'] == 'keck'
     assert inserted['last_modifier'] == 'kpub'
     assert isinstance(inserted['date_modified'], datetime.datetime)
+    assert inserted['date_created'] == inserted['date_modified']
 
 
 def test_add_swallows_duplicate_key_error(db, caplog):
@@ -259,6 +260,18 @@ def test_set_affiliation_updates_fields_and_returns_updated_articles(db):
     db.collection.update_one.assert_called_once()
     filter_arg = db.collection.update_one.call_args[0][0]
     assert filter_arg == {'_id': '2020ApJ...1A'}
+
+
+def test_set_affiliation_does_not_touch_date_created(db):
+    # Regression test: date_created must be set once at insert time (add_row)
+    # and never overwritten by later updates such as set_affiliation.
+    article = {'_id': '2020ApJ...1A', 'bibcode': '2020ApJ...1A',
+               'date_created': 'original-creation-date'}
+
+    db.set_affiliation([article], last_modifier='tester', affiliation='keck')
+
+    update_arg = db.collection.update_one.call_args[0][1]
+    assert 'date_created' not in update_arg['$set']
 
 
 # ---------------------------------------------------------------------------

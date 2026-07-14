@@ -175,8 +175,8 @@ class PublicationDB(MongoDBConnector):
 
         instruments = ''
         if len(snippits) == 0:
-            log.info("No snippets found.  Marking as unrelated.")
-            mission = 'unrelated'
+            log.info("No snippets found.  Marking as unknown.")
+            mission = 'unknown'
         instruments = "|".join([ x for x in snippits.keys() if x in self.config['instruments']])
 
         # Get archive ack
@@ -842,10 +842,10 @@ def get_word_match_counts_from_text(text, words, blacklist=None):
         for ch in (' ', '/', '\(', '-', ':'):
             find = f"{ch}{word}"
             for match in re.finditer(find, text):
-                snip = text[match.start()-5:match.end()+5]
+                snip = text[max(match.start()-5, 0):match.end()+5]
                 if any(bl in snip for bl in blacklist):
                     continue
-                snippet = text[match.start()-80:match.end()+80]
+                snippet = text[max(match.start()-80, 0):match.end()+80]
                 counts[word]['count'] += 1
                 counts[word]['snippets'].append(snippet)
     return {key: val for key, val in counts.items() if val['count'] != 0}
@@ -858,6 +858,8 @@ def get_word_match_counts_by_pdf(bibcode, words, ads_api_key, blacklist=[]):
     if not outfile:
         raise Exception(f"Could not download fulltext for {bibcode}")
     text = get_pdf_text(outfile)
+    if not text:
+        raise Exception(f"No text could be extracted from downloaded fulltext for {bibcode}")
     text = text.replace("\n",' ')
     text = text.replace("\r",' ')
     text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\xff]', ' ', text)
@@ -1104,17 +1106,13 @@ def kpub_import(jsonfile):
 
     db = PublicationDB(config)
     with open(jsonfile, 'r') as f:
-        rows = json.load()
+        rows = json.load(f)
     for row in rows:
         try:
-            bibcode = row['bibcode'] 
-            mission = row['mission'] 
-            instrs  = row['instruments'] 
-            archive = row['archive'] 
-            db.add_by_bibcode(bibcode, mission=mission,
-                instruments=instrs, archive=archive, interactive=False)
+            bibcode = row['bibcode']
+            db.add_by_bibcode(bibcode, interactive=False)
         except Exception as err:
-            log.warning("attempt #{} for {}: error '{}'".format(row, err))
+            log.warning("Could not import {}: error '{}'".format(row, err))
 
     #all done
     log.info(f'\nFinished importing.')
@@ -1194,7 +1192,7 @@ def kpub_spreadsheet(filename):
 
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
 
-    db = PublicationDB(filename, config)
+    db = PublicationDB(config)
     spreadsheet = []
     rows = db.select_for_spreadsheet()
     for row in rows:
@@ -1242,7 +1240,7 @@ def kpub_spreadsheet(filename):
                     ])
         spreadsheet.append(myrow)
 
-    output_fn = 'kpub-publications.xlsx'
+    output_fn = filename
     log.info('Writing to {}'.format(output_fn))
     wb = Workbook()
     ws = wb.active

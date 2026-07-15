@@ -214,4 +214,4 @@ Year ranges (e.g. `2020-2024`) are supported. Use `--limit N` to cap the number 
 ## Acknowledgements
 This tool is made possible thanks to the efforts of Geert Barentsen who wrote the original version of [kpub](https://github.com/KeplerGO/kpub) for Kepler/K2.  Thanks also to NASA ADS for providing a web API to their database.
 
-Last Update: Today
+Last Update: 15-July-2026

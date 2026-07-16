@@ -30,6 +30,7 @@ export interface Article {
   aff: string[]
   last_modifier: string
   date_modified: string
+  date_created: string
   month: number
   snippits: Snippits
   affiliation: string

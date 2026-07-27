@@ -1,4 +1,4 @@
-import { DataGrid, type GridColDef, type GridRowSelectionModel, type GridToolbarProps, type ToolbarPropsOverrides } from '@mui/x-data-grid';
+import { DataGrid, type GridColDef, type GridComparatorFn, type GridRowSelectionModel, type GridToolbarProps, type ToolbarPropsOverrides } from '@mui/x-data-grid';
 import { type Article } from './App';
 import { ADS_URL } from './config'
 import Stack from '@mui/material/Stack';
@@ -22,15 +22,23 @@ interface EditToolbarProps extends GridToolbarProps, ToolbarPropsOverrides {
 
 export const ads_link = (x: string) => `${ADS_URL}/abs/${x}/abstract`
 
-// Blank/undefined dates are treated as missing and always sorted after valid dates.
-const dateSortComparator = (v1?: string | null, v2?: string | null) => {
+// Blank/undefined dates are treated as missing and always sorted below valid
+// dates, in both ascending and descending order. MUI negates the comparator's
+// result for descending sort, so we have to counter-negate the "missing value"
+// branch based on the column's current sort direction (looked up via the api
+// on the cell params) to keep missing values pinned to the bottom either way.
+const dateSortComparator: GridComparatorFn<string | null | undefined> = (v1, v2, cellParams1) => {
     const t1 = v1 ? new Date(v1).getTime() : NaN;
     const t2 = v2 ? new Date(v2).getTime() : NaN;
     const invalid1 = Number.isNaN(t1);
     const invalid2 = Number.isNaN(t2);
     if (invalid1 && invalid2) return 0;
-    if (invalid1) return 1;
-    if (invalid2) return -1;
+    if (invalid1 || invalid2) {
+        const sortItem = cellParams1.api.getSortModel().find((item: { field: string }) => item.field === cellParams1.field);
+        const isDesc = sortItem?.sort === 'desc';
+        const raw = invalid1 ? 1 : -1;
+        return isDesc ? -raw : raw;
+    }
     return t1 - t2;
 };
 

@@ -22,6 +22,18 @@ interface EditToolbarProps extends GridToolbarProps, ToolbarPropsOverrides {
 
 export const ads_link = (x: string) => `${ADS_URL}/abs/${x}/abstract`
 
+// Blank/undefined dates are treated as missing and always sorted after valid dates.
+const dateSortComparator = (v1?: string | null, v2?: string | null) => {
+    const t1 = v1 ? new Date(v1).getTime() : NaN;
+    const t2 = v2 ? new Date(v2).getTime() : NaN;
+    const invalid1 = Number.isNaN(t1);
+    const invalid2 = Number.isNaN(t2);
+    if (invalid1 && invalid2) return 0;
+    if (invalid1) return 1;
+    if (invalid2) return -1;
+    return t1 - t2;
+};
+
 export const columns: GridColDef<Article>[] = [
     { field: 'title', headerName: 'TITLE', minWidth: 300, width: 837 },
     {
@@ -72,11 +84,11 @@ export const adminColumns = [
     },
     {
         field: 'date_created', headerName: 'DATE_CREATED', width: 150,
-        sortComparator: (v1: string, v2: string) => new Date(v1).getTime() - new Date(v2).getTime(),
+        sortComparator: dateSortComparator,
     },
     {
         field: 'date_modified', headerName: 'DATE_MODIFIED', width: 150,
-        sortComparator: (v1: string, v2: string) => new Date(v1).getTime() - new Date(v2).getTime(),
+        sortComparator: dateSortComparator,
     },
     { field: 'last_modifier', headerName: 'LAST_MODIFIER', width: 150 },
     { field: 'has_acknowledgement', headerName: 'Acknowledgement?', width: 70 }

@@ -32,12 +32,13 @@ interface Props {
     year_begin?: number,
     instruments?: string[],
     extrapolate?: boolean,
-    countType?: CountType
+    countType?: CountType,
+    filterArchive?: boolean,
 }
 
 export const PlotDisplay = (props: Props) => {
 
-    const { plotname, year_begin, instruments, extrapolate, countType } = props
+    const { plotname, year_begin, instruments, extrapolate, countType, filterArchive } = props
     const [traces, setTraces] = useState<any>([])
     const [layout, setLayout] = useState<any>({})
 
@@ -48,19 +49,35 @@ export const PlotDisplay = (props: Props) => {
     const plot_data = useMemo(async () => {
         switch (plotname) {
             case 'data_by_instrument':
-                const iresp = await fetch(`${apiURL}/get_plot?plotname=plot_by_instrument&instruments=${instruments?.join('|') || ''}`)
+                let url = `${apiURL}/get_plot?plotname=plot_by_instrument&instruments=${instruments?.join('|') || ''}`
+                if (filterArchive == true) {
+                    url += `&filter_archive=true`
+                }
+                const iresp = await fetch(url)
                 const idata = await iresp.json() as PlotDataByInstrument
                 return idata
             case 'data_by_year':
-                const yresp = await fetch(`${apiURL}/get_plot?plotname=plot_by_year&extrapolate=${extrapolate || false}`)
+                let url = `$apiURL}/get_plot?plotname=plot_by_year&extrapolate=${extrapolate || false}`
+                if (filterArchive == true) {
+                    url += `&filter_archive=true`
+                }
+                const yresp = await fetch(url)
                 const ydata = await yresp.json() as PlotDataByYear
                 return ydata
             case 'data_by_count':
-                const cresp = await fetch(`${apiURL}/get_plot?plotname=plot_author_count`)
+                let url = `${apiURL}/get_plot?plotname=plot_author_count`
+                if (filterArchive == true) {
+                    url += `&filter_archive=true`
+                }
+                const cresp = await fetch(url)
                 const cdata = await cresp.json() as PlotDataByCount
                 return cdata
             default:
-                const dresp = await fetch(`${apiURL}/get_plot?plotname=plot_by_instrument&instruments=${instruments?.join('|') || ''}`)
+                let url = `${apiURL}/get_plot?plotname=plot_by_instrument&instruments=${instruments?.join('|') || ''}`
+                if (filterArchive == true) {
+                    url += `&filter_archive=true`
+                }
+                const dresp = await fetch(url)
                 const ddata = await dresp.json() as PlotDataByInstrument
                 return ddata
         }

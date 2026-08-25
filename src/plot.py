@@ -59,7 +59,8 @@ mpl.rcParams["grid.linewidth"] = 1
 def get_plot_by_year_data( db,
                  year_begin=2009,
                  extrapolate=True,
-                 colors=["#3498db", "#27ae60", "#95a5a6"]):
+                 colors=["#3498db", "#27ae60", "#95a5a6"],
+                 filter_archive=None):
     """Plots a bar chart showing the number of publications per year.
 
     Parameters
@@ -75,10 +76,14 @@ def get_plot_by_year_data( db,
 
     colors : list of str
         Define the facecolor for plots
+    
+    filter_archive : boolean or None
+        If `True`, filter out non archive papers. If False Filter out archived papers
     """
     # Obtain the dictionary which provides the annual counts
     current_year = datetime.datetime.now().year
-    counts = db.get_articles_by_years_instrument(year_begin=year_begin, year_end=current_year)
+    counts = db.get_articles_by_years_instrument(year_begin=year_begin, year_end=current_year, filter_archive=filter_archive)
+
 
     # Also plot the extrapolated prediction for the current year
     current_total = None
@@ -105,8 +110,9 @@ def plot_by_year(db,
                  barwidth=0.75,
                  dpi=200,
                  extrapolate=True,
-                 colors=["#3498db", "#27ae60", "#95a5a6"]):
-    """Plots a bar chart showing the number of publications per year.
+                 colors=["#3498db", "#27ae60", "#95a5a6"])
+    """
+    number of publications per year.
 
     Parameters
     ----------
@@ -244,7 +250,7 @@ def plot_science_piechart(db, output_fn="kpub-piechart.pdf", dpi=200, sciences=[
     pl.savefig(output_fn, dpi=dpi)
     pl.close()
 
-def get_plot_author_count_data(db, year_begin):
+def get_plot_author_count_data(db, year_begin, filter_archive=None):
     """Gets data for a line chart showing the number of authors over time.
 
     Parameters
@@ -254,6 +260,9 @@ def get_plot_author_count_data(db, year_begin):
 
     year_begin : int
         What year should the plot start?
+
+    filter_archive : boolean or None
+        If `True`, filter out non archive papers. If False Filter out archived papers
     """
     # Obtain the dictionary which provides the annual counts
     current_year = datetime.datetime.now().year
@@ -266,7 +275,7 @@ def get_plot_author_count_data(db, year_begin):
     author_counts = 0
     cumulative_first_author_counts = []
     first_author_counts = 0
-    metricsData = db.get_metrics_data(year_begin, current_year)
+    metricsData = db.get_metrics_data(year_begin, current_year, filter_archive=filter_archive)
     for metricsYear in metricsData:
         paper_counts += metricsYear['paper_count']
         author_counts += metricsYear['author_count']
@@ -356,7 +365,8 @@ def plot_author_count(db,
 
 def get_plot_instruments_data(db,
                          year_begin=2009,
-                         instruments=[]):
+                         instruments=[],
+                         filter_archive=None):
     """Gets data for a multiline graph showing the number of publications per instrument per year.
 
     Parameters
@@ -369,13 +379,16 @@ def get_plot_instruments_data(db,
 
     instruments : array(str)
         List of instruments to graph
+
+    filter_archive : boolean or None
+        If `True`, filter out non archive papers. If False Filter out archived papers
     """
     # Obtain the dictionary which provides the annual counts
 
     data = {}
     year_end = datetime.datetime.now().year
     for instr in instruments:
-        counts = db.get_articles_by_years_instrument(year_begin, year_end, instr)
+        counts = db.get_articles_by_years_instrument(year_begin, year_end, instr, filter_archive=filter_archive)
         data[instr] = counts
 
     years = list(np.arange(year_begin, year_end+1))
@@ -420,7 +433,6 @@ def plot_instruments(db,
 
     plotdata['years'] = [years] * len(plotdata['columns']) # for bokeh
     src = ColumnDataSource(plotdata)
-    pdb.set_trace()
     p = figure(width=1000, height=800, x_range=years)
     p.multi_line(xs='years',
                  ys='values',

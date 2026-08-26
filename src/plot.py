@@ -110,7 +110,7 @@ def plot_by_year(db,
                  barwidth=0.75,
                  dpi=200,
                  extrapolate=True,
-                 colors=["#3498db", "#27ae60", "#95a5a6"])
+                 colors=["#3498db", "#27ae60", "#95a5a6"]):
     """
     number of publications per year.
 

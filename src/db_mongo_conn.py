@@ -169,8 +169,7 @@ class MongoDBConnector:
                     'affiliation': 'keck' }
         if filter_archive is not None:
             query['archive'] = filter_archive
-        match = {'$match': 
-                }
+        match = {'$match': query }
         unwind = {'$unwind': '$author_norm'}
         group = {'$group': 
                   {'_id': '$year', 
@@ -245,7 +244,9 @@ class MongoDBConnector:
             query['instruments'] = instrument
             group['_id']['instrument'] = '$instruments'
         if filter_archive is not None:
-            query['archive'] = filter_archive
+            if isinstance(filter_archive, str):
+                filter_archive = filter_archive.lower() == 'true'
+            query['archive'] = bool(filter_archive)
         pipeline.append({'$match': query})
 
         sort = {'$sort': {'year': 1}}

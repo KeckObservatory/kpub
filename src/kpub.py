@@ -264,7 +264,9 @@ class PublicationDB(MongoDBConnector):
             # Get the bibcode
             article['date_modified'] = datetime.datetime.now()
             if koa_affiliation is not None:
-                article['archive'] = koa_affiliation
+                if isinstance(koa_affiliation, str):
+                    koa_affiliation = koa_affiliation.lower() == 'true'
+                article['archive'] = bool(koa_affiliation)
             if affiliation is not None:
                 article['affiliation'] = affiliation
             if instruments is not None:

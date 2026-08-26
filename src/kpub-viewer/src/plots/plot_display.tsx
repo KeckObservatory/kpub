@@ -49,6 +49,7 @@ export const PlotDisplay = (props: Props) => {
     const plot_data = useMemo(async () => {
         switch (plotname) {
             case 'data_by_instrument':
+                {
                 let url = `${apiURL}/get_plot?plotname=plot_by_instrument&instruments=${instruments?.join('|') || ''}`
                 if (filterArchive == true) {
                     url += `&filter_archive=true`
@@ -56,15 +57,19 @@ export const PlotDisplay = (props: Props) => {
                 const iresp = await fetch(url)
                 const idata = await iresp.json() as PlotDataByInstrument
                 return idata
+                }
             case 'data_by_year':
-                let url = `$apiURL}/get_plot?plotname=plot_by_year&extrapolate=${extrapolate || false}`
+                {
+                let url = `${apiURL}/get_plot?plotname=plot_by_year&extrapolate=${extrapolate || false}`
                 if (filterArchive == true) {
                     url += `&filter_archive=true`
                 }
                 const yresp = await fetch(url)
                 const ydata = await yresp.json() as PlotDataByYear
                 return ydata
+                }
             case 'data_by_count':
+                {
                 let url = `${apiURL}/get_plot?plotname=plot_author_count`
                 if (filterArchive == true) {
                     url += `&filter_archive=true`
@@ -72,7 +77,9 @@ export const PlotDisplay = (props: Props) => {
                 const cresp = await fetch(url)
                 const cdata = await cresp.json() as PlotDataByCount
                 return cdata
+                }
             default:
+                {
                 let url = `${apiURL}/get_plot?plotname=plot_by_instrument&instruments=${instruments?.join('|') || ''}`
                 if (filterArchive == true) {
                     url += `&filter_archive=true`
@@ -80,8 +87,9 @@ export const PlotDisplay = (props: Props) => {
                 const dresp = await fetch(url)
                 const ddata = await dresp.json() as PlotDataByInstrument
                 return ddata
+                }
         }
-    }, [plotname, extrapolate])
+    }, [plotname, extrapolate, filterArchive])
 
     useEffect(() => {
 

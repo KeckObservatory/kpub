@@ -144,7 +144,6 @@ class PublicationDB(MongoDBConnector):
             article (json): Article json object returned from ADS API
         """        
         # Do not show an article that is already in the database
-        #if False:
         if self.article_exists(article):
             log.info("{} is already in the database "
                      "-- skipping.".format(article['bibcode']))
@@ -264,7 +263,9 @@ class PublicationDB(MongoDBConnector):
             # Get the bibcode
             article['date_modified'] = datetime.datetime.now()
             if koa_affiliation is not None:
-                article['archive'] = koa_affiliation
+                if isinstance(koa_affiliation, str):
+                    koa_affiliation = koa_affiliation.lower() == 'true'
+                article['archive'] = bool(koa_affiliation)
             if affiliation is not None:
                 article['affiliation'] = affiliation
             if instruments is not None:
@@ -357,20 +358,22 @@ class PublicationDB(MongoDBConnector):
         if year_begin is None: # Sometimes a None is passed
             year_begin = 2009
 
+        filter_archive = kwargs.get('filter_archive', None)
+
         if plotname == 'plot_by_year':
             extrapolate = kwargs.get('extrapolate', True)
             if extrapolate is None:
                 extrapolate = True
-            plotdata = plot.get_plot_by_year_data(self, year_begin=year_begin, extrapolate=extrapolate)
+            plotdata = plot.get_plot_by_year_data(self, year_begin=year_begin, extrapolate=extrapolate, filter_archive=filter_archive)
         elif plotname == 'plot_author_count':
-            plotdata = plot.get_plot_author_count_data(self, year_begin=year_begin)
+            plotdata = plot.get_plot_author_count_data(self, year_begin=year_begin, filter_archive=filter_archive)
         elif plotname == 'plot_by_instrument':
             allInstruments = '|'.join(self.config.get('instruments', []))
             instruments = kwargs.get('instruments', allInstruments)
             if instruments is None:
                 instruments = allInstruments
             instruments = instruments.split('|')
-            plotdata, _ = plot.get_plot_instruments_data(self, year_begin=year_begin, instruments=instruments)
+            plotdata, _ = plot.get_plot_instruments_data(self, year_begin=year_begin, instruments=instruments, filter_archive=filter_archive)
         else:
             raise ValueError(f"Unknown plot name: {plotname}") 
 
@@ -1056,11 +1059,11 @@ def kpub_stats():
         f.write(markdown.encode("utf-8"))  # Legacy Python
     f.close()
 
-def kpub_plot_data(plotname, instruments=None, year_begin=None, extrapolate=False):
+def kpub_plot_data(plotname, instruments=None, year_begin=None, extrapolate=False, filter_archive=None):
     """Creates beautiful data for plotting."""
     config = yaml.load(open(f'{PACKAGEDIR}/config/config.live.yaml'), Loader=yaml.FullLoader)
     pubdb = PublicationDB(config)
-    plotData = pubdb.get_plot_data(plotname=plotname, instruments=instruments, extrapolate=extrapolate, year_begin=year_begin)
+    plotData = pubdb.get_plot_data(plotname=plotname, instruments=instruments, extrapolate=extrapolate, year_begin=year_begin, filter_archive=filter_archive)
     return plotData
 
 def kpub_plot():
@@ -1277,6 +1280,8 @@ def make_parser():
                         help='year to begin the data collection. e.g. "2015"')
     plot_data_parser.add_argument('extrapolate', nargs='?', default=False,
                         help='Extrapolate the data to the current date.')
+    plot_data_parser.add_argument('filter_archive', nargs='?', default=None,
+                        help='Filter for papers with an archive mention')
 
     citations_parser = subparsers.add_parser('update_citations', help='Update citation fields for publications.')
     citations_parser.add_argument('year', nargs='?', default=None, type=int,
@@ -1329,7 +1334,7 @@ if __name__ == "__main__":
     if cmd == 'update':      kpub_update(margs.month)
     elif cmd == 'add':       kpub_add(margs.bibcode, margs.interactive)
     elif cmd == 'plot':      kpub_plot()
-    elif cmd == 'plot_data': kpub_plot_data(margs.plotname, margs.instruments, margs.year_begin, margs.extrapolate)
+    elif cmd == 'plot_data': kpub_plot_data(margs.plotname, margs.instruments, margs.year_begin, margs.extrapolate, margs.filter_archive)
     elif cmd == 'delete':    kpub_delete(margs.bibcode)
     elif cmd == 'import':    kpub_import(margs.jsonfile)
     elif cmd == 'export':    kpub_export(margs.monthyear, margs.begin_year, margs.filename, margs.affiliation, margs.csv, getattr(margs, 'all', False))

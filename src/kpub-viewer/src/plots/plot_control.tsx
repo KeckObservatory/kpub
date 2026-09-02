@@ -106,6 +106,7 @@ const PlotControl = () => {
     const [startYear, setStartYear] = useState<number | undefined>(1994)
     const [instruments, setInstruments] = useState<string[]>(INSTRUMENTS)
     const [extrapolate, setExtrapolate] = useState(false)
+    const [filterArchive, setFilterArchive] = useState(false)
     const [plotName, setPlotName] = useState<PlotNames>("data_by_instrument")
 
     return (
@@ -151,6 +152,10 @@ const PlotControl = () => {
                 {plotName === 'data_by_count' && (
                     <CountTypeButtonGroup countType={countType} setCountType={setCountType} />
                 )}
+                <FormControlLabel
+                    control={<Checkbox checked={filterArchive} onChange={(e) => setFilterArchive(e.target.checked)} />}
+                    label="Filter Archive"
+                />
             </Stack>
             {plotName === 'data_by_instrument' && (
                 <InstrumentsMultipleSelect
@@ -163,6 +168,7 @@ const PlotControl = () => {
                 year_begin={startYear}
                 instruments={typeof instruments === 'string' ? [instruments as string] : instruments}
                 extrapolate={extrapolate}
+                filterArchive={filterArchive}
                 countType={countType}
             />
         </Stack>

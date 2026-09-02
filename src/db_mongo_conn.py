@@ -163,12 +163,13 @@ class MongoDBConnector:
             query).sort('date', pymongo.DESCENDING))
         return rows
 
-    def get_metrics_data(self, year_begin, year_end):
+    def get_metrics_data(self, year_begin, year_end, filter_archive=None):
 
-        match = {'$match': 
-                   { 'year': {'$gte': year_begin, '$lte': year_end}, 
+        query = { 'year': {'$gte': year_begin, '$lte': year_end}, 
                     'affiliation': 'keck' }
-                }
+        if filter_archive is not None:
+            query['archive'] = filter_archive
+        match = {'$match': query }
         unwind = {'$unwind': '$author_norm'}
         group = {'$group': 
                   {'_id': '$year', 
@@ -233,7 +234,7 @@ class MongoDBConnector:
         rows = list(self.collection.find(query, projection))
         return rows
 
-    def get_articles_by_years_instrument(self, year_begin, year_end, instrument=None):
+    def get_articles_by_years_instrument(self, year_begin, year_end, instrument=None, filter_archive=None):
         """Get articles by year range, and instrument."""
         pipeline = []
         query = { 'year': {'$gte': year_begin, '$lte': year_end }, 'affiliation': 'keck' }
@@ -242,6 +243,10 @@ class MongoDBConnector:
             pipeline.append({'$unwind': '$instruments'})
             query['instruments'] = instrument
             group['_id']['instrument'] = '$instruments'
+        if filter_archive is not None:
+            if isinstance(filter_archive, str):
+                filter_archive = filter_archive.lower() == 'true'
+            query['archive'] = bool(filter_archive)
         pipeline.append({'$match': query})
 
         sort = {'$sort': {'year': 1}}

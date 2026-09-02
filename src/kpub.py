@@ -144,8 +144,7 @@ class PublicationDB(MongoDBConnector):
             article (json): Article json object returned from ADS API
         """        
         # Do not show an article that is already in the database
-        if False:
-        #if self.article_exists(article):
+        if self.article_exists(article):
             log.info("{} is already in the database "
                      "-- skipping.".format(article['bibcode']))
             return 0

@@ -24,9 +24,9 @@ import pdb
 # Try relative import (when used as installed package or python -m kpub)
 # Fall back to absolute import (when imported directly from source)
 try:
-    from .db_mongo_conn import MongoDBConnector
+    from .db_mongo_conn import MongoDBConnector, is_true
 except ImportError:
-    from db_mongo_conn import MongoDBConnector
+    from db_mongo_conn import MongoDBConnector, is_true
 
 #init logging
 logging.basicConfig(level=logging.INFO)
@@ -362,8 +362,7 @@ class PublicationDB(MongoDBConnector):
 
         if plotname == 'plot_by_year':
             extrapolate = kwargs.get('extrapolate', True)
-            if extrapolate is None:
-                extrapolate = True
+            extrapolate = True if extrapolate is None else is_true(extrapolate)
             plotdata = plot.get_plot_by_year_data(self, year_begin=year_begin, extrapolate=extrapolate, filter_archive=filter_archive)
         elif plotname == 'plot_author_count':
             plotdata = plot.get_plot_author_count_data(self, year_begin=year_begin, filter_archive=filter_archive)

@@ -88,7 +88,8 @@ def test_kpub_plot_data_delegates_to_db(mock_publication_db):
 
     assert result == {'x': [1, 2, 3]}
     pubdb.get_plot_data.assert_called_once_with(
-        plotname='plot_by_year', instruments='HIRES', extrapolate=True, year_begin=2015)
+        plotname='plot_by_year', instruments='HIRES', extrapolate=True, year_begin=2015,
+        filter_archive=None)
 
 
 def test_kpub_plot_calls_get_plot(mock_publication_db):

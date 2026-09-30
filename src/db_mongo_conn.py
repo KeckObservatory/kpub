@@ -13,6 +13,16 @@ log = logging.getLogger('kpub')
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config", "config.live.yaml")
 
 
+def is_true(value):
+    """Return True only for an explicit true value (True, 'true', '1', 'yes').
+
+    Query/CLI parameters often arrive as strings, so 'false' must not be truthy.
+    """
+    if isinstance(value, str):
+        return value.strip().lower() in ('true', '1', 'yes')
+    return value is True or value == 1
+
+
 def from_config(database="kpub", collection=None, config_path=CONFIG_PATH):
     """Create a MongoDBConnector using connection details from config.live.yaml."""
     with open(config_path) as f:
@@ -167,8 +177,8 @@ class MongoDBConnector:
 
         query = { 'year': {'$gte': year_begin, '$lte': year_end}, 
                     'affiliation': 'keck' }
-        if filter_archive is not None:
-            query['archive'] = filter_archive
+        if is_true(filter_archive):
+            query['archive'] = True
         match = {'$match': query }
         unwind = {'$unwind': '$author_norm'}
         group = {'$group': 
@@ -243,10 +253,8 @@ class MongoDBConnector:
             pipeline.append({'$unwind': '$instruments'})
             query['instruments'] = instrument
             group['_id']['instrument'] = '$instruments'
-        if filter_archive is not None:
-            if isinstance(filter_archive, str):
-                filter_archive = filter_archive.lower() == 'true'
-            query['archive'] = bool(filter_archive)
+        if is_true(filter_archive):
+            query['archive'] = True
         pipeline.append({'$match': query})
 
         sort = {'$sort': {'year': 1}}

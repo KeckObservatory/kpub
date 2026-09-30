@@ -78,7 +78,7 @@ def get_plot_by_year_data( db,
         Define the facecolor for plots
     
     filter_archive : boolean or None
-        If `True`, filter out non archive papers. If False Filter out archived papers
+        If `True` (or 'true'), only count archive papers. Anything else applies no filter.
     """
     # Obtain the dictionary which provides the annual counts
     current_year = datetime.datetime.now().year
@@ -262,7 +262,7 @@ def get_plot_author_count_data(db, year_begin, filter_archive=None):
         What year should the plot start?
 
     filter_archive : boolean or None
-        If `True`, filter out non archive papers. If False Filter out archived papers
+        If `True` (or 'true'), only count archive papers. Anything else applies no filter.
     """
     # Obtain the dictionary which provides the annual counts
     current_year = datetime.datetime.now().year
@@ -381,7 +381,7 @@ def get_plot_instruments_data(db,
         List of instruments to graph
 
     filter_archive : boolean or None
-        If `True`, filter out non archive papers. If False Filter out archived papers
+        If `True` (or 'true'), only count archive papers. Anything else applies no filter.
     """
     # Obtain the dictionary which provides the annual counts
 

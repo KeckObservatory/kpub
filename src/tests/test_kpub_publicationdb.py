@@ -365,7 +365,7 @@ def test_get_plot_data_by_year(db, monkeypatch):
     result = db.get_plot_data('plot_by_year')
 
     assert result == {'x': [1], 'y': [2]}
-    mock_fn.assert_called_once_with(db, year_begin=2009, extrapolate=True)
+    mock_fn.assert_called_once_with(db, year_begin=2009, extrapolate=True, filter_archive=None)
 
 
 def test_get_plot_data_author_count(db, monkeypatch):
@@ -375,7 +375,7 @@ def test_get_plot_data_author_count(db, monkeypatch):
     result = db.get_plot_data('plot_author_count', year_begin=2015)
 
     assert result == {'authors': 3}
-    mock_fn.assert_called_once_with(db, year_begin=2015)
+    mock_fn.assert_called_once_with(db, year_begin=2015, filter_archive=None)
 
 
 def test_get_plot_data_by_instrument_uses_config_instruments_by_default(db, monkeypatch):
@@ -628,3 +628,60 @@ def test_query_ads_builds_expected_url_and_returns_data(db, monkeypatch):
     assert called_key == 'FAKE-ADS-API-KEY'
     assert 'ack:%22keck+observatory%22' in called_url
     assert 'pubdate:2020-05' in called_url
+
+
+# ---------------------------------------------------------------------------
+# filter_archive / extrapolate parsing
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize('value, expected', [
+    (True, True), ('true', True), ('True', True), ('1', True), (1, True),
+    (None, False), (False, False), ('false', False), ('', False), (0, False), ('None', False),
+])
+def test_is_true(value, expected):
+    assert kpub_module.is_true(value) is expected
+
+
+def _match_stage(db):
+    pipeline = db.collection.aggregate.call_args[0][0]
+    return next(stage['$match'] for stage in pipeline if '$match' in stage)
+
+
+@pytest.mark.parametrize('filter_archive', [None, False, 'false', ''])
+def test_get_articles_by_years_instrument_no_archive_filter_unless_true(db, filter_archive):
+    db.collection.aggregate.return_value = []
+
+    db.get_articles_by_years_instrument(2025, 2026, filter_archive=filter_archive)
+
+    assert 'archive' not in _match_stage(db)
+
+
+@pytest.mark.parametrize('filter_archive', [True, 'true'])
+def test_get_articles_by_years_instrument_filters_archive_when_true(db, filter_archive):
+    db.collection.aggregate.return_value = []
+
+    db.get_articles_by_years_instrument(2025, 2026, filter_archive=filter_archive)
+
+    assert _match_stage(db)['archive'] is True
+
+
+@pytest.mark.parametrize('filter_archive, archive_filtered', [('false', False), (None, False), ('true', True)])
+def test_get_metrics_data_archive_filter(db, filter_archive, archive_filtered):
+    db.collection.aggregate.return_value = []
+
+    db.get_metrics_data(2025, 2026, filter_archive=filter_archive)
+
+    match = _match_stage(db)
+    assert ('archive' in match) is archive_filtered
+    if archive_filtered:
+        assert match['archive'] is True
+
+
+@pytest.mark.parametrize('extrapolate, expected', [(None, True), ('false', False), ('true', True), (False, False)])
+def test_get_plot_data_by_year_parses_extrapolate(db, monkeypatch, extrapolate, expected):
+    mock_fn = MagicMock(return_value={})
+    monkeypatch.setattr(kpub_module.plot, 'get_plot_by_year_data', mock_fn)
+
+    db.get_plot_data('plot_by_year', extrapolate=extrapolate)
+
+    assert mock_fn.call_args.kwargs['extrapolate'] is expected
